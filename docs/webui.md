@@ -1,7 +1,7 @@
 # WebUI
 
 A built-in, **loopback-only** web app for reviewing your dictation history,
-checking system health, and toggling features — no account, no telemetry, no
+checking system health and toggling features, no account, no telemetry, no
 cloud.
 
 ## Launch
@@ -24,22 +24,22 @@ python -m dictate.webui  # development
 
 The home surface. Shows everything you need at a glance:
 
-- **KPI cards** — utterances today, characters dictated, average cleanup
+- **KPI cards**: utterances today, characters dictated, average cleanup
   latency (last 24 h), total entries in history.
-- **Sparkline** — 14-day daily-utterances trend.
-- **Recent dictations** — last 6 entries with app + latency badges.
-- **System health** — backend (Ollama/OpenRouter/raw), latency, configured
+- **Sparkline**: 14-day daily-utterances trend.
+- **Recent dictations**: last 6 entries with app + latency badges.
+- **System health**: backend (Ollama/OpenRouter/raw), latency, configured
   cleanup model, fallback if substituted.
-- **Suggestions** — actionable nudges (only ever shown when they apply),
+- **Suggestions**: actionable nudges (only ever shown when they apply),
   e.g. "no transcripts in 30 days", "history file world-readable".
-- **Quick actions** — jump to history search, 30-day stats, settings, export.
+- **Quick actions**: jump to history search, 30-day stats, settings, export.
 
 ### Stats (`/stats`)
 
 Operational view. Designed for owners debugging latency or backend choice:
 
 - 30-day **utterances per day** chart with hourly breakdown.
-- **Latency percentiles** (p50/p90/p99) for ASR, cleanup, and end-to-end.
+- **Latency percentiles** (p50/p90/p99) for ASR, cleanup and end-to-end.
 - **Local-vs-cloud ratio** showing how much processing stayed on-device.
 - Top apps, top presets, redactions caught, voice commands triggered.
 
@@ -52,18 +52,18 @@ Full transcript browser with:
 - Per-entry detail: raw vs cleaned diff, learn-corrections list, redactions
   caught, metrics (ASR ms, cleanup ms, model used).
 - **Bulk delete** and **"purge older than N days"** controls.
-- **Export** as JSONL, CSV, or Markdown.
+- **Export** as JSONL, CSV or Markdown.
 
 ### Settings (`/settings`)
 
 One-click toggles for runtime behaviour. **Cleanup is OFF by default** for
 privacy; flip it on whenever you want LLM polishing:
 
-- **Cleanup pipeline** — on/off, backend (Ollama / OpenRouter / raw), model.
-- **Privacy mode** — force everything through the local backend.
-- **Redaction** — toggle and review regex rules.
-- **Hotkey** — re-bind the trigger key.
-- **History retention** — auto-purge after N days.
+- **Cleanup pipeline**: on/off, backend (Ollama / OpenRouter / raw), model.
+- **Privacy mode**: force everything through the local backend.
+- **Redaction**: toggle and review regex rules.
+- **Hotkey**: re-bind the trigger key.
+- **History retention**: auto-purge after N days.
 
 Checkboxes are intentionally **click-target restricted**: you have to click
 the actual checkbox, not the row label, so you can't toggle something by
