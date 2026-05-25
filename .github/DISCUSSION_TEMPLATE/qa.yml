@@ -1,0 +1,29 @@
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, please check the [FAQ](https://github.com/lewiswigmore/dictate/blob/main/FAQ.md) and existing Q&A discussions.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What have you tried?
+      description: Any troubleshooting steps already attempted
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: e.g. 14.5
+  - type: input
+    id: dictate-version
+    attributes:
+      label: dictate version
+      description: Run `dictate --version`
+      placeholder: e.g. 0.1.0

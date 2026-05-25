@@ -1,0 +1,104 @@
+site_name: dictate
+site_description: Privacy-first macOS voice dictation. Local Whisper + Ollama, OpenRouter optional.
+site_url: https://lewiswigmore.github.io/dictate/
+repo_url: https://github.com/lewiswigmore/dictate
+repo_name: lewiswigmore/dictate
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 lewiswigmore — MIT licensed
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  logo: assets/logo-mono.svg
+  favicon: assets/logo-mono-32.png
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Install: usage.md
+      - Permissions: permissions.md
+      - First run: first-run.md
+  - Usage:
+      - Voice commands: voice-commands.md
+      - Per-app vocab: vocab.md
+      - Code dictation: code-dictation.md
+      - WebUI: webui.md
+      - CLI: cli.md
+  - Automation:
+      - URL scheme: url-scheme.md
+      - Raycast: raycast.md
+      - AppleScript: applescript.md
+  - Architecture:
+      - Pipeline: architecture.md
+      - Threading: architecture.md
+  - Operations:
+      - Troubleshooting: troubleshooting.md
+      - Build .app: build-app.md
+      - Homebrew tap: homebrew-tap.md
+      - Pre-launch checklist: pre-launch-checklist.md
+      - GitHub setup: github-setup.md
+  - Project:
+      - Roadmap: roadmap.md
+      - FAQ: faq.md
+      - Changelog: changelog.md
+      - Threat model: threat-model.md
+      - Third-party notices: third-party-notices.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/lewiswigmore/dictate

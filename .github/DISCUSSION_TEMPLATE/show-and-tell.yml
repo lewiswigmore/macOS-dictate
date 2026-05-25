@@ -1,0 +1,22 @@
+title: "[Show] "
+labels: ["show-and-tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Built something cool with dictate? Share it here!
+  - type: textarea
+    id: what
+    attributes:
+      label: What you built / how you use dictate
+    validations:
+      required: true
+  - type: textarea
+    id: tips
+    attributes:
+      label: Tips and tricks
+      description: Vocab setup, voice commands, integrations, anything you've learned
+  - type: input
+    id: screenshot
+    attributes:
+      label: Link to screenshot or demo (optional)

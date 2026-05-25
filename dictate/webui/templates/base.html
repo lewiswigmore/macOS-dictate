@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "History" }} · Dictate</title>
+    <link rel="stylesheet" href="/static/app.css">
+    <link rel="icon" type="image/svg+xml" href="/static/dictate-mark.svg">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Dictate">
+        <svg class="brand-mark" viewBox="0 0 60 60" width="28" height="28" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <rect x="3"  y="27" width="6"  height="6"  rx="1.5"/>
+            <rect x="13" y="16" width="8"  height="8"  rx="1.5"/>
+            <rect x="13" y="38" width="6"  height="6"  rx="1.5"/>
+            <rect x="25" y="6"  width="10" height="10" rx="1.5"/>
+            <rect x="25" y="26" width="8"  height="8"  rx="1.5"/>
+            <rect x="25" y="44" width="6"  height="6"  rx="1.5"/>
+            <rect x="39" y="18" width="12" height="12" rx="1.5"/>
+            <rect x="39" y="42" width="8"  height="8"  rx="1.5"/>
+            <rect x="52" y="8"  width="6"  height="6"  rx="1.5"/>
+            <rect x="52" y="32" width="6"  height="6"  rx="1.5"/>
+          </g>
+          <rect x="52" y="50" width="6" height="6" rx="1.5" fill="#06B6D4"/>
+        </svg>
+        <span class="brand-name">Dictate</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <div class="nav-links">
+          <a href="/">List</a>
+          <a href="/stats">Stats</a>
+          <a href="/settings">Settings</a>
+        </div>
+        <div class="nav-meta">
+          <span class="entry-count" aria-label="Total history entries">{{ total_entries }} {{ entry_label }}</span>
+          <span class="entry-count" aria-label="Last updated">Updated {{ last_updated_label }}</span>
+        </div>
+      </nav>
+    </header>
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}<script src="/static/app.js"></script>{% endblock %}
+  </body>
+</html>
