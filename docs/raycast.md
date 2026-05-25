@@ -13,8 +13,8 @@ A Raycast extension lives in `raycast/` and controls dictate through the `dictat
 ## Install for development
 
 ```bash
-git clone https://github.com/lewiswigmore/dictate.git
-cd dictate/raycast
+git clone https://github.com/lewiswigmore/macOS-dictate.git
+cd macOS-dictate/raycast
 npm install
 npm run dev
 ```

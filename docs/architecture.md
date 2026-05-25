@@ -8,40 +8,40 @@ dictate is a privacy-first macOS voice dictation app that records speech on a ho
 
 ```mermaid
 flowchart LR
-    A[Hotkey Tap] --> B[Recorder<br/>AVAudioEngine]
-    B --> C[VAD<br/>silero]
-    C --> D[ASR<br/>faster-whisper]
-    D --> E{Voice Command?}
-    E -->|yes| F[Commands<br/>regex]
-    E -->|no| G[Replacements<br/>dictionary]
-    G --> H[Redact<br/>secrets]
-    H --> I{Cleanup Backend}
-    I -->|ollama| J[Ollama<br/>local]
-    I -->|openrouter| K[OpenRouter<br/>cloud]
-    I -->|raw| L[Pass-through]
-    J --> M[Typer<br/>Cmd+V paste]
+    A["Hotkey Tap"] --> B["Recorder (AVAudioEngine)"]
+    B --> C["VAD (silero)"]
+    C --> D["ASR (faster-whisper)"]
+    D --> E{"Voice command?"}
+    E -->|yes| F["Commands (regex)"]
+    E -->|no| G["Replacements dictionary"]
+    G --> H["Redact secrets"]
+    H --> I{"Cleanup backend"}
+    I -->|ollama| J["Ollama (local)"]
+    I -->|openrouter| K["OpenRouter (cloud)"]
+    I -->|raw| L["Pass-through"]
+    J --> M["Typer (Cmd+V paste)"]
     K --> M
     L --> M
     F --> M
-    M --> N[History<br/>JSONL append]
-    N --> O[WebUI<br/>FastAPI loopback]
+    M --> N["History (JSONL append)"]
+    N --> O["WebUI (FastAPI loopback)"]
 ```
 
 ## Threading model
 
 ```mermaid
 flowchart TB
-    subgraph Main Thread - CFRunLoop
-        MT[rumps menubar<br/>AppKit events<br/>CGEventTap callbacks]
+    subgraph Main["Main thread (CFRunLoop)"]
+        MT["rumps menubar + AppKit events + CGEventTap callbacks"]
     end
-    subgraph Audio Thread
-        AT[AVAudioEngine tap<br/>ring buffer writes]
+    subgraph Audio["Audio thread"]
+        AT["AVAudioEngine tap + ring buffer writes"]
     end
-    subgraph Pipeline Threads
-        PT[VAD detection<br/>ASR inference<br/>cleanup HTTP<br/>typer dispatch]
+    subgraph Pipeline["Pipeline threads"]
+        PT["VAD detection + ASR inference + cleanup HTTP + typer dispatch"]
     end
-    subgraph WebUI Thread - opt
-        WT[uvicorn server<br/>loopback only]
+    subgraph WebUI["WebUI thread (opt)"]
+        WT["uvicorn server (loopback only)"]
     end
     MT -.hotkey events.-> PT
     AT -.ring buffer.-> PT

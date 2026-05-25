@@ -42,11 +42,11 @@ They are on the roadmap for v0.4. v0.1 is a clean OSS release; distribution poli
 
 ## Can I contribute?
 
-Yes. See [CONTRIBUTING.md](https://github.com/lewiswigmore/dictate/blob/main/CONTRIBUTING.md) for the contribution workflow.
+Yes. See [CONTRIBUTING.md](https://github.com/lewiswigmore/macOS-dictate/blob/main/CONTRIBUTING.md) for the contribution workflow.
 
 ## How do I report a security issue?
 
-Use GitHub Security Advisories. See [SECURITY.md](https://github.com/lewiswigmore/dictate/blob/main/SECURITY.md) for details.
+Use GitHub Security Advisories. See [SECURITY.md](https://github.com/lewiswigmore/macOS-dictate/blob/main/SECURITY.md) for details.
 
 ## What if Ollama is down?
 

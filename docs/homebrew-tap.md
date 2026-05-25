@@ -13,6 +13,10 @@
    brew install dictate
    ```
 
+   (`brew tap lewiswigmore/dictate` resolves to the
+   `lewiswigmore/homebrew-dictate` repository per Homebrew naming
+   convention.)
+
 After each release, update the formula SHA256 in the tap repository and push the tap change.
 
 ## Future
