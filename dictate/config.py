@@ -243,7 +243,10 @@ class Config:
     @classmethod
     def load(cls, root: Path | None = None) -> Config:
         global config_load_error, config_load_failed
-        root = Path(root or DEFAULT_ROOT)
+        if root is None:
+            env_root = os.environ.get("DICTATE_ROOT")
+            root = Path(env_root) if env_root else DEFAULT_ROOT
+        root = Path(root)
         cfg_dir = root / "config"
         c = cls(root=root)
         config_load_failed = False
