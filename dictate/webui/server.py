@@ -24,10 +24,24 @@ from dictate.webui.store import HistoryStore
 log = get_logger(__name__)
 LOOPBACK_CLIENTS = {"127.0.0.1", "::1"}
 SECURITY_HEADERS = {
-    "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'",
+    "Content-Security-Policy": (
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; script-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    ),
     "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
 }
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Static files with no caching — the WebUI ships fresh on every restart."""
+
+    def file_response(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
 
 
 class LoopbackOnlyMiddleware(BaseHTTPMiddleware):
@@ -39,10 +53,27 @@ class LoopbackOnlyMiddleware(BaseHTTPMiddleware):
         client = request.client.host if request.client else ""
         if client not in LOOPBACK_CLIENTS:
             response = PlainTextResponse("Forbidden", status_code=403)
+        elif self._is_csrf_blocked(request):
+            response = PlainTextResponse(
+                "Forbidden: missing X-Dictate-WebUI header on state-changing request",
+                status_code=403,
+            )
         else:
             response = await call_next(request)
         response.headers.update(SECURITY_HEADERS)
         return response
+
+    @staticmethod
+    def _is_csrf_blocked(request: Request) -> bool:
+        # Browsers cannot set custom request headers on cross-origin requests
+        # without triggering a CORS preflight, which this server does not allow.
+        # So requiring X-Dictate-WebUI on mutating requests defeats CSRF from
+        # a malicious page that the user happens to visit in another tab.
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return False
+        if request.headers.get("X-Dictate-WebUI") == "1":
+            return False
+        return True
 
 
 def create_app(config: Config) -> FastAPI:
@@ -52,7 +83,7 @@ def create_app(config: Config) -> FastAPI:
     app.state.config = config
     app.state.history_store = store
     app.add_middleware(LoopbackOnlyMiddleware)
-    app.mount("/static", StaticFiles(directory=base_dir / "static"), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=base_dir / "static"), name="static")
     app.include_router(create_router(store, base_dir / "templates", config))
     return app
 

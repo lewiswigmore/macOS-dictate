@@ -1,10 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
+<header class="dashboard-hero">
+  <div>
+    <h1>Stats</h1>
+    <p class="muted">How dictation has performed on this Mac over the last 30 days.</p>
+  </div>
+</header>
 <section class="cards" id="stats-cards" aria-label="Summary statistics"></section>
 <section class="grid" aria-label="History charts">
-  <div class="panel"><h2>Utterances per day</h2><canvas id="day-chart"></canvas></div>
+  <div class="panel panel-wide">
+    <h2>Utterances per day <span class="panel-sub">last 30 days</span></h2>
+    <canvas id="day-chart"></canvas>
+    <div class="chart-axis" id="day-chart-axis"></div>
+  </div>
+  <div class="panel">
+    <h2>When you dictate <span class="panel-sub">hour of day</span></h2>
+    <canvas id="hour-chart"></canvas>
+    <div class="chart-axis" id="hour-chart-axis"></div>
+  </div>
   <div class="panel"><h2>Preset distribution</h2><canvas id="preset-chart"></canvas></div>
-  <div class="panel"><h2>Backend distribution</h2><canvas id="backend-chart"></canvas></div>
+  <div class="panel">
+    <h2>Backend distribution</h2>
+    <canvas id="backend-chart"></canvas>
+    <p class="muted small panel-foot" id="backend-foot"></p>
+  </div>
   <div class="panel"><h2>Top apps</h2><canvas id="app-chart"></canvas></div>
 </section>
 {% endblock %}

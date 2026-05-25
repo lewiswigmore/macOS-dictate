@@ -187,22 +187,58 @@ class HistoryStore:
                 self._write_rows_unlocked(kept)
             return deleted
 
+    def recent(self, limit: int = 6) -> list[Entry]:
+        return self.list(limit=limit)
+
+    def today_summary(self) -> dict[str, Any]:
+        """Aggregate today's utterances for the dashboard KPI strip."""
+        now = datetime.now(UTC)
+        start = datetime(now.year, now.month, now.day, tzinfo=UTC)
+        today = [
+            entry
+            for entry in self._entries()
+            if (dt := _parse_datetime(entry.ts)) and dt >= start
+        ]
+        chars = sum(len(entry.cleaned or entry.raw or "") for entry in today)
+        latencies = [
+            float(entry.metrics.latency_ms)
+            for entry in today
+            if entry.metrics and isinstance(entry.metrics.latency_ms, int | float)
+        ]
+        fallback = sum(
+            1 for entry in today if entry.metrics and entry.metrics.used_fallback
+        )
+        return {
+            "count": len(today),
+            "chars": chars,
+            "avg_latency_ms": round(sum(latencies) / len(latencies), 2)
+            if latencies
+            else None,
+            "fallback_rate": round(fallback / len(today), 4) if today else 0,
+        }
+
     def stats(self) -> dict[str, Any]:
         entries = self._entries()
         now = datetime.now(UTC)
         cutoff = now - timedelta(days=29)
         by_day = {(cutoff + timedelta(days=i)).date().isoformat(): 0 for i in range(30)}
+        by_hour = {h: 0 for h in range(24)}
         by_preset: dict[str, int] = {}
         by_app: dict[str, int] = {}
         by_backend: dict[str, int] = {}
         latencies: list[float] = []
         fallback_count = 0
         total_chars = 0
+        local_count = 0
+        cloud_backends = {"openrouter", "openai"}
 
         for entry in entries:
             dt = _parse_datetime(entry.ts)
             if dt and dt >= cutoff:
                 by_day[dt.date().isoformat()] = by_day.get(dt.date().isoformat(), 0) + 1
+            if dt:
+                local_dt = dt.astimezone()
+                by_hour[local_dt.hour] = by_hour.get(local_dt.hour, 0) + 1
             by_preset[entry.preset or "unknown"] = by_preset.get(entry.preset or "unknown", 0) + 1
             app_name = (
                 entry.frontmost.app_name
@@ -210,17 +246,16 @@ class HistoryStore:
                 else "unknown"
             )
             by_app[app_name] = by_app.get(app_name, 0) + 1
+            backend_label = "unknown"
             if entry.metrics:
                 explicit_backend = entry.metrics.backend or getattr(entry.metrics, "cleanup_backend", None)
                 if explicit_backend:
-                    label = str(explicit_backend)
+                    backend_label = str(explicit_backend)
                 elif getattr(entry.metrics, "cleanup_skipped", None):
-                    label = "skipped"
-                else:
-                    label = "unknown"
-            else:
-                label = "unknown"
-            by_backend[label] = by_backend.get(label, 0) + 1
+                    backend_label = "skipped"
+            by_backend[backend_label] = by_backend.get(backend_label, 0) + 1
+            if backend_label.lower() not in cloud_backends:
+                local_count += 1
             if entry.metrics and isinstance(entry.metrics.latency_ms, int | float):
                 latencies.append(float(entry.metrics.latency_ms))
             if entry.metrics and entry.metrics.used_fallback:
@@ -228,15 +263,22 @@ class HistoryStore:
             total_chars += len(entry.cleaned or entry.raw or "")
 
         total = len(entries)
+        p50 = _percentile(latencies, 50)
+        p95 = _percentile(latencies, 95)
         return {
             "total": total,
             "total_chars": total_chars,
+            "avg_chars": round(total_chars / total, 1) if total else 0,
             "by_day": by_day,
+            "by_hour": by_hour,
             "by_preset": by_preset,
             "by_app": dict(sorted(by_app.items(), key=lambda item: item[1], reverse=True)[:10]),
             "by_backend": by_backend,
             "avg_latency_ms": round(sum(latencies) / len(latencies), 2) if latencies else None,
+            "p50_latency_ms": p50,
+            "p95_latency_ms": p95,
             "fallback_rate": round(fallback_count / total, 4) if total else 0,
+            "local_ratio": round(local_count / total, 4) if total else 1.0,
         }
 
     def export(self, format: Literal["jsonl", "csv", "markdown"]) -> bytes | str:
@@ -352,15 +394,25 @@ class HistoryStore:
 
     def _write_rows_unlocked(self, rows: list[dict[str, Any]]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.is_symlink():
+            raise PermissionError(
+                f"history path {self.path} is a symlink; refusing to write"
+            )
         tmp = self.path.with_name(f"{self.path.name}.tmp")
         with tmp.open("w", encoding="utf-8") as f:
             for row in rows:
                 f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
             f.flush()
             os.fsync(f.fileno())
-        os.chmod(tmp, _HISTORY_FILE_MODE)
+        try:
+            os.chmod(tmp, _HISTORY_FILE_MODE, follow_symlinks=False)
+        except (OSError, NotImplementedError):
+            os.chmod(tmp, _HISTORY_FILE_MODE)
         os.replace(tmp, self.path)
-        os.chmod(self.path, _HISTORY_FILE_MODE)
+        try:
+            os.chmod(self.path, _HISTORY_FILE_MODE, follow_symlinks=False)
+        except (OSError, NotImplementedError):
+            os.chmod(self.path, _HISTORY_FILE_MODE)
 
     @staticmethod
     def _id_for(row: dict[str, Any], _idx: int) -> str:
@@ -407,3 +459,16 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=UTC)
     return dt.astimezone(UTC)
+
+
+def _percentile(values: list[float], pct: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return round(ordered[0], 2)
+    k = (len(ordered) - 1) * (pct / 100.0)
+    lo = int(k)
+    hi = min(lo + 1, len(ordered) - 1)
+    frac = k - lo
+    return round(ordered[lo] + (ordered[hi] - ordered[lo]) * frac, 2)

@@ -1,0 +1,13 @@
+name: "dictate CodeQL config"
+
+paths:
+  - "dictate/**"
+  - "scripts/**"
+
+paths-ignore:
+  - "tests/**"
+  - "bench/**"
+  - "docs/**"
+  - "**/*.md"
+  - ".venv/**"
+  - "models/**"

@@ -6,36 +6,24 @@
     <title>{{ title or "History" }} · Dictate</title>
     <link rel="stylesheet" href="/static/app.css">
     <link rel="icon" type="image/svg+xml" href="/static/dictate-mark.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/dictate-mark-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/dictate-touch-180.png">
+    <meta name="theme-color" content="#0B0F19" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
   </head>
+  {% from "_brand_mark.html" import brand_mark %}
   <body>
     <header class="site-header">
       <a class="brand" href="/" aria-label="Dictate">
-        <svg class="brand-mark" viewBox="0 0 60 60" width="28" height="28" aria-hidden="true" focusable="false">
-          <g fill="currentColor">
-            <rect x="3"  y="27" width="6"  height="6"  rx="1.5"/>
-            <rect x="13" y="16" width="8"  height="8"  rx="1.5"/>
-            <rect x="13" y="38" width="6"  height="6"  rx="1.5"/>
-            <rect x="25" y="6"  width="10" height="10" rx="1.5"/>
-            <rect x="25" y="26" width="8"  height="8"  rx="1.5"/>
-            <rect x="25" y="44" width="6"  height="6"  rx="1.5"/>
-            <rect x="39" y="18" width="12" height="12" rx="1.5"/>
-            <rect x="39" y="42" width="8"  height="8"  rx="1.5"/>
-            <rect x="52" y="8"  width="6"  height="6"  rx="1.5"/>
-            <rect x="52" y="32" width="6"  height="6"  rx="1.5"/>
-          </g>
-          <rect x="52" y="50" width="6" height="6" rx="1.5" fill="#06B6D4"/>
-        </svg>
-        <span class="brand-name">Dictate</span>
+        {{ brand_mark(28) }}
+        <span class="brand-name">d<span class="brand-name-i">ı</span>ctate</span>
       </a>
       <nav class="site-nav" aria-label="Primary">
         <div class="nav-links">
-          <a href="/">List</a>
-          <a href="/stats">Stats</a>
-          <a href="/settings">Settings</a>
-        </div>
-        <div class="nav-meta">
-          <span class="entry-count" aria-label="Total history entries">{{ total_entries }} {{ entry_label }}</span>
-          <span class="entry-count" aria-label="Last updated">Updated {{ last_updated_label }}</span>
+          <a href="/" title="Overview, recent activity, and system health">Dashboard</a>
+          <a href="/history" title="Browse, search, and export every transcript">History</a>
+          <a href="/stats" title="30-day trends, latency, and backend usage">Stats</a>
+          <a href="/settings" title="Privacy, backends, and preferences">Settings</a>
         </div>
       </nav>
     </header>

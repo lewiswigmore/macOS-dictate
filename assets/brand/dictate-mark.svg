@@ -1,21 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Dictate brand mark — scattered rounded squares evoking dispersed voice
-  particles. Inspired by Interfere's block mosaic but asymmetric so it
-  reads as motion rather than a pyramid. One cyan accent.
--->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="120" height="120" fill="none">
   <g fill="#0B0F19">
-    <rect x="3"  y="27" width="6"  height="6"  rx="1.5"/>
-    <rect x="13" y="16" width="8"  height="8"  rx="1.5"/>
-    <rect x="13" y="38" width="6"  height="6"  rx="1.5"/>
-    <rect x="25" y="6"  width="10" height="10" rx="1.5"/>
-    <rect x="25" y="26" width="8"  height="8"  rx="1.5"/>
-    <rect x="25" y="44" width="6"  height="6"  rx="1.5"/>
-    <rect x="39" y="18" width="12" height="12" rx="1.5"/>
-    <rect x="39" y="42" width="8"  height="8"  rx="1.5"/>
-    <rect x="52" y="8"  width="6"  height="6"  rx="1.5"/>
-    <rect x="52" y="32" width="6"  height="6"  rx="1.5"/>
+    <rect x="0"  y="28" width="4"  height="4"  rx="1"/>
+    <rect x="8"  y="18" width="8"  height="8"  rx="1.5"/>
+    <rect x="8"  y="34" width="8"  height="8"  rx="1.5"/>
+    <rect x="22" y="8"  width="10" height="10" rx="2"/>
+    <rect x="22" y="25" width="10" height="10" rx="2"/>
+    <rect x="22" y="42" width="10" height="10" rx="2"/>
+    <rect x="38" y="18" width="8"  height="8"  rx="1.5"/>
+    <rect x="38" y="34" width="8"  height="8"  rx="1.5"/>
   </g>
-  <rect x="52" y="50" width="6" height="6" rx="1.5" fill="#06B6D4"/>
+  <rect x="52" y="28" width="4" height="4" rx="1" fill="#06B6D4"/>
 </svg>

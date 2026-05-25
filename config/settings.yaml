@@ -31,7 +31,10 @@ vad:
     # toggle/tap mode (you tapped to start) or after you release the key.
 
 cleanup:
-  enabled: true
+  enabled: false                    # OFF by default: dictate ships privacy-first.
+                                    # Raw transcript + smart_punctuate is great for most users.
+                                    # Flip to true (or toggle in /settings) once you've installed
+                                    # an Ollama model you want to use for cleanup.
   backend: ollama                   # entry name in backends.yaml (default — local & private)
   privacy_backend: ollama           # used when Privacy Mode is enabled in the menu bar
   model: qwen2.5:3b-instruct

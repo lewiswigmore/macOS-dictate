@@ -21,3 +21,5 @@ updates:
     labels:
       - dependencies
       - ci
+    # Keep actions pinned to commit SHAs; dependabot will bump the SHA
+    # and update the trailing "# vX" comment automatically.

@@ -12,7 +12,7 @@
         status.textContent = 'saving…';
         fetch('/api/settings/pref', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Dictate-WebUI': '1' },
           body: JSON.stringify({ key: key, value: value })
         }).then(function (r) {
           if (!r.ok) { return r.text().then(function (t) { throw new Error(t); }); }
