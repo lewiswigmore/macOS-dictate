@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial public release.
 - Hotkey-driven recording (hold / tap / double-tap state machine).
 - Streaming `faster-whisper` ASR with silero VAD.
-- Local cleanup via Ollama (default) and opt-in cleanup via OpenRouter.
+- Cleanup pipeline (off by default for privacy): opt-in **Ollama** local
+  cleanup and opt-in **OpenRouter** cloud cleanup, toggled per backend in
+  Settings.
 - Per-app vocab presets: code, work, personal, projects.
 - Voice commands: `scratch that`, `new line`, `new paragraph`, `spell that …`.
 - Replacement dictionary layer (`config/vocab/replacements.txt`).
@@ -52,5 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pyproject.toml` with hatchling build backend and `[project.scripts]` for `dictate` and `dictate-web`.
 - `justfile`, `py.typed` (PEP 561), pre-commit config, CODEOWNERS, dependabot.
 
-[Unreleased]: https://github.com/lewiswigmore/dictate/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/lewiswigmore/dictate/releases/tag/v0.1.0
+[Unreleased]: https://github.com/lewiswigmore/macOS-dictate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/lewiswigmore/macOS-dictate/releases/tag/v0.1.0

@@ -14,7 +14,7 @@
 ## Install via git
 
 ```bash
-git clone https://github.com/lewiswigmore/dictate.git ~/dictate
+git clone https://github.com/lewiswigmore/macOS-dictate.git ~/dictate
 cd ~/dictate
 ./install.sh --with-ollama
 ./install.sh --autolaunch   # optional: start at login and restart on crash

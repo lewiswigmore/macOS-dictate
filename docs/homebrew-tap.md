@@ -9,7 +9,7 @@
 3. Users can then install with:
 
    ```bash
-   brew tap lewiswigmore/dictate
+   brew tap lewiswigmore/macOS-dictate
    brew install dictate
    ```
 

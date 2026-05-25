@@ -20,7 +20,7 @@
 - [ ] CONTRIBUTING.md describes setup + test workflow
 - [ ] CODE_OF_CONDUCT.md routes through GitHub flows
 - [ ] No placeholder emails (`@dictate.app` etc.)
-- [ ] All GitHub URLs point at correct org (`lewiswigmore/dictate`)
+- [ ] All GitHub URLs point at correct org (`lewiswigmore/macOS-dictate`)
 - [ ] `THREAT_MODEL.md`, `THIRD_PARTY_NOTICES.md`, `docs/architecture.md` complete
 
 ## Build / CI

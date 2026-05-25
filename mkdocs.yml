@@ -1,8 +1,8 @@
 site_name: dictate
 site_description: Privacy-first macOS voice dictation. Local Whisper + Ollama, OpenRouter optional.
-site_url: https://lewiswigmore.github.io/dictate/
-repo_url: https://github.com/lewiswigmore/dictate
-repo_name: lewiswigmore/dictate
+site_url: https://lewiswigmore.github.io/macOS-dictate/
+repo_url: https://github.com/lewiswigmore/macOS-dictate
+repo_name: lewiswigmore/macOS-dictate
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 lewiswigmore — MIT licensed
 
@@ -11,15 +11,15 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -28,17 +28,22 @@ theme:
     - navigation.indexes
     - navigation.top
     - navigation.tracking
+    - navigation.footer
     - content.code.copy
     - content.action.edit
     - search.suggest
     - search.highlight
+    - toc.follow
   font:
     text: Inter
     code: JetBrains Mono
   icon:
     repo: fontawesome/brands/github
-  logo: assets/logo-mono.svg
-  favicon: assets/logo-mono-32.png
+  logo: assets/dictate-mark.svg
+  favicon: assets/dictate-mark-32.png
+
+extra_css:
+  - assets/dictate.css
 
 nav:
   - Home: index.md
@@ -101,4 +106,4 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/lewiswigmore/dictate
+      link: https://github.com/lewiswigmore/macOS-dictate

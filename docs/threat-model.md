@@ -7,7 +7,7 @@ This is an honest summary of what dictate is designed to protect, and what it is
 ## What dictate protects against
 
 - **Opportunistic network observers.** dictate has no telemetry by default. Local dictation, local cleanup, local history, and the local WebUI do not send usage data to a remote service.
-- **Accidental cloud upload.** The default path is local-first: Whisper runs locally for speech-to-text, cleanup defaults to Ollama, and cloud cleanup is only used when OpenRouter is explicitly enabled in config.
+- **Accidental cloud upload.** The default path is local-first: Whisper runs locally for speech-to-text, and cleanup is **off by default**. Local Ollama cleanup and cloud OpenRouter cleanup are both opt-in and surface clearly in Settings before any data leaves the device.
 - **Curious people who pick up your laptop briefly.** dictate inserts text through clipboard paste for reliable Unicode input, then restores the previous clipboard after paste so dictated text is not left as a plaintext clipboard surprise.
 
 ## What dictate does NOT protect against
