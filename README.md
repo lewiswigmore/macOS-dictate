@@ -10,7 +10,6 @@ your Mac. Optional LLM cleanup runs locally through Ollama or remotely
 through OpenRouter and is off by default.
 
 [![CI](https://github.com/lewiswigmore/macOS-dictate/actions/workflows/ci.yml/badge.svg)](https://github.com/lewiswigmore/macOS-dictate/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/lewiswigmore/macOS-dictate/actions/workflows/codeql.yml/badge.svg)](https://github.com/lewiswigmore/macOS-dictate/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lewiswigmore/macOS-dictate/badge)](https://scorecard.dev/viewer/?uri=github.com/lewiswigmore/macOS-dictate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -189,7 +188,7 @@ dictate ships with a hardened supply chain and is local-by-default:
 
 - All GitHub Actions pinned to commit SHAs, with a hardened-runner egress
   audit step.
-- CodeQL on `python`, `javascript-typescript` and `actions` scopes.
+- AI code review on every PR via sebastionAI.
 - OSSF Scorecard published on every push.
 - Bandit and pip-audit gate pull requests.
 - Secret scanning and push protection enabled at the repo level.

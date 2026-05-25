@@ -13,9 +13,9 @@
 </div>
 
 !!! info "Status"
-    **v0.1.0** initial public release. CodeQL and Bandit run on every PR;
-    OSSF Scorecard runs on push to main and on a weekly schedule.
-    Branch protection requires code-owner review.
+    **v0.1.0** initial public release. AI code review (sebastionAI) and
+    Bandit run on every PR. OSSF Scorecard runs on push to main and on
+    a weekly schedule. Branch protection requires code-owner review.
     See the [Roadmap](roadmap.md) and [Changelog](changelog.md).
 
 ## Why dictate?
@@ -35,7 +35,7 @@
   stats with percentile latencies, full history with search/export, settings
   with one-click toggles. Loopback only, CSRF protected, dark-mode aware.
 - **Open source, hardened.** MIT licensed, pinned-SHA GitHub Actions,
-  CodeQL on three languages, OSSF Scorecard, no telemetry.
+  AI code review on every PR, OSSF Scorecard, no telemetry.
   [Read the code](https://github.com/lewiswigmore/macOS-dictate).
 
 ## Quick start
@@ -90,9 +90,8 @@ See the full [architecture diagram](architecture.md) and [threat model](threat-m
 ## Security & supply chain
 
 - All GitHub Actions pinned to commit SHAs, hardened runner egress audit.
-- CodeQL (`python`, `javascript-typescript`, `actions`), Bandit and
-  pip-audit run on every PR. OSSF Scorecard runs on push to main and on
-  a weekly schedule.
+- AI code review (sebastionAI), Bandit and pip-audit run on every PR.
+  OSSF Scorecard runs on push to main and on a weekly schedule.
 - Secret-scanning + push protection enabled.
 - Branch protection: required code-owner review, dismiss stale, linear
   history, conversation resolution, `enforce_admins: true`.
