@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def _env() -> dict[str, str]:
     env = os.environ.copy()
     env["HOME"] = str(REPO_ROOT.parent)
+    env["DICTATE_ROOT"] = str(REPO_ROOT)
     env["DICTATE_DOCTOR_SKIP_SLOW_CHECKS"] = "1"
     return env
 
