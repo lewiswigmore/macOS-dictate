@@ -77,7 +77,7 @@ menu bar or visit <http://127.0.0.1:47843>.
 | Settings | Cleanup on/off, backend, model, privacy mode, redaction, hotkey, retention |
 
 The server binds to `127.0.0.1` only. Middleware rejects non-loopback
-clients. Mutating requests require a custom `X-Dictate-Csrf` header so
+clients. Mutating requests require a custom `X-Dictate-WebUI` header so
 third-party origins cannot forge requests across origins. CSP locks
 `frame-ancestors` to `none`.
 

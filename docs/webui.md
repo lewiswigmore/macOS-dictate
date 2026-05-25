@@ -71,12 +71,16 @@ accident while scanning the page.
 
 ## Security model
 
-- Binds to `127.0.0.1` only; middleware rejects any non-loopback client even
-  if a reverse proxy is fronting it.
+- Binds to `127.0.0.1` only. Middleware rejects any client whose
+  `request.client.host` is not loopback. **Do not put dictate behind a
+  local reverse proxy that forwards remote traffic** because the WebUI
+  would then see the proxy as `127.0.0.1` and allow the request. If you
+  need remote access, wait for the token-protected remote mode tracked
+  on the [Roadmap](roadmap.md) instead of fronting the loopback server.
 - **Custom-header CSRF defence**: every mutating request must carry
-  `X-Dictate-Csrf: 1`, blocking CSRF from third-party origins (which can't
-  set custom headers cross-origin without an explicit CORS pre-flight, which
-  the server denies).
+  `X-Dictate-WebUI: 1`, blocking CSRF from third-party origins (which
+  can't set custom headers cross-origin without an explicit CORS
+  pre-flight, which the server denies).
 - **Strict CSP** with `frame-ancestors 'none'`, `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
 - **Prompt-injection fence**: every cleanup call wraps user audio in a

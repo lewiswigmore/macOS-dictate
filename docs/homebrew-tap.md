@@ -9,9 +9,13 @@
 3. Users can then install with:
 
    ```bash
-   brew tap lewiswigmore/macOS-dictate
+   brew tap lewiswigmore/dictate
    brew install dictate
    ```
+
+   (`brew tap lewiswigmore/dictate` resolves to the
+   `lewiswigmore/homebrew-dictate` repository per Homebrew naming
+   convention.)
 
 After each release, update the formula SHA256 in the tap repository and push the tap change.
 

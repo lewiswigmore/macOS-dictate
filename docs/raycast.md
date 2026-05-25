@@ -14,7 +14,7 @@ A Raycast extension lives in `raycast/` and controls dictate through the `dictat
 
 ```bash
 git clone https://github.com/lewiswigmore/macOS-dictate.git
-cd dictate/raycast
+cd macOS-dictate/raycast
 npm install
 npm run dev
 ```

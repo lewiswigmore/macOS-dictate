@@ -13,8 +13,9 @@
 </div>
 
 !!! info "Status"
-    **v0.1.0** — initial public release. CodeQL, OSSF Scorecard, and Bandit
-    run on every PR. Branch protection requires code-owner review.
+    **v0.1.0** initial public release. CodeQL and Bandit run on every PR;
+    OSSF Scorecard runs on push to main and on a weekly schedule.
+    Branch protection requires code-owner review.
     See the [Roadmap](roadmap.md) and [Changelog](changelog.md).
 
 ## Why dictate?
@@ -89,13 +90,14 @@ See the full [architecture diagram](architecture.md) and [threat model](threat-m
 ## Security & supply chain
 
 - All GitHub Actions pinned to commit SHAs, hardened runner egress audit.
-- CodeQL (`python`, `javascript-typescript`, `actions`), OSSF Scorecard,
-  Bandit, pip-audit run on every PR.
+- CodeQL (`python`, `javascript-typescript`, `actions`), Bandit and
+  pip-audit run on every PR. OSSF Scorecard runs on push to main and on
+  a weekly schedule.
 - Secret-scanning + push protection enabled.
 - Branch protection: required code-owner review, dismiss stale, linear
   history, conversation resolution, `enforce_admins: true`.
-- Loopback-only WebUI with custom-header CSRF defence, strict CSP
-  (`frame-ancestors 'none'`), per-request DICTATION prompt-fence nonce,
-  symlink-aware chmod on history file.
+- Loopback-only WebUI with custom-header CSRF defence (`X-Dictate-WebUI: 1`
+  on mutating requests), strict CSP (`frame-ancestors 'none'`), per-request
+  DICTATION prompt-fence nonce, symlink-aware chmod on history file.
 
 Report security issues via [GitHub Security Advisories](https://github.com/lewiswigmore/macOS-dictate/security/advisories/new), not public issues.

@@ -1,5 +1,5 @@
 site_name: dictate
-site_description: Privacy-first macOS voice dictation. Local Whisper + Ollama, OpenRouter optional.
+site_description: Privacy-first macOS voice dictation. Local Whisper on-device with optional Ollama or OpenRouter cleanup.
 site_url: https://lewiswigmore.github.io/macOS-dictate/
 repo_url: https://github.com/lewiswigmore/macOS-dictate
 repo_name: lewiswigmore/macOS-dictate
