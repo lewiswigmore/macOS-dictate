@@ -4,11 +4,11 @@ A Raycast extension lives in `raycast/` and controls dictate through the `dictat
 
 ## Commands
 
-- **Toggle Recording** — start or stop a recording session.
-- **Start Recording** — start a new recording session.
-- **Stop Recording** — stop the current session.
-- **Open History** — open the private WebUI.
-- **Open Settings** — open dictate settings.
+- **Toggle Recording**: start or stop a recording session.
+- **Start Recording**: start a new recording session.
+- **Stop Recording**: stop the current session.
+- **Open History**: open the private WebUI.
+- **Open Settings**: open dictate settings.
 
 ## Install for development
 

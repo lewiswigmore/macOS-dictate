@@ -1,6 +1,6 @@
 # Building dictate.app
 
-This guide explains how to build dictate as a proper macOS .app bundle, sign it, and notarize it for distribution.
+This guide explains how to build dictate as a proper macOS .app bundle, sign it and notarize it for distribution.
 
 ## Quick build (development, unsigned)
 
@@ -12,7 +12,7 @@ pip install py2app
 open dist/dictate.app
 ```
 
-Alias mode is much faster and symlinks back to your source — useful while iterating.
+Alias mode is much faster and symlinks back to your source, useful while iterating.
 For a real bundle that's portable to other machines, drop `--alias`.
 
 The unsigned .app will show a Gatekeeper warning on first launch on other machines.
@@ -69,7 +69,7 @@ spctl -a -vvv -t install dist/dictate.app
 - **py2app + faster-whisper / onnxruntime**: these C-extension heavy deps sometimes fail to bundle. If you hit issues, try alias mode first to confirm the app boots, then experiment with the `includes`/`excludes` lists in setup_app.py.
 - **pyobjc framework discovery**: py2app sometimes misses pyobjc framework subpackages. Add them explicitly to `includes` if you see import errors at runtime.
 - **Code signing fails on nested binaries**: use `--deep` for the codesign call (already in sign_app.sh).
-- **Notarization rejects**: read the JSON log via `xcrun notarytool log <submission-id> --keychain-profile AC_PASSWORD` — usually a missing entitlement.
+- **Notarization rejects**: read the JSON log via `xcrun notarytool log <submission-id> --keychain-profile AC_PASSWORD`: usually a missing entitlement.
 - **App launches but hotkey doesn't work**: the bundle needs Accessibility + Input Monitoring permissions. Grant via System Settings → Privacy & Security.
 
 ## Roadmap

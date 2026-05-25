@@ -21,7 +21,7 @@ dictate restart    # stop + start
 dictate status     # show pid + pidfile path, exit 1 if not running
 ```
 
-State lives at `~/Library/Application Support/dictate/` by default — override
+State lives at `~/Library/Application Support/dictate/` by default, override
 with the `DICTATE_STATE_DIR` env var.
 
 Background output is appended to `~/Library/Application Support/dictate/dictate.log`.
@@ -73,7 +73,7 @@ macOS 14.5
 
 ## `dictate --dry-run`
 
-Validate config, imports, and required vocab files without starting the app.
+Validate config, imports and required vocab files without starting the app.
 
 ```bash
 dictate --dry-run

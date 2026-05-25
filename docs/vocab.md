@@ -6,9 +6,9 @@ dictate chooses a preset from the frontmost app, then merges vocabulary files fo
 
 Vocabulary lives in `config/vocab/`:
 
-- `code.txt` — developer tools, languages, identifiers, protocols, and symbols.
-- `work.txt` — team names, product names, customer names, and workplace jargon.
-- `personal.txt` — names, places, acronyms, and phrases you use outside work.
+- `code.txt`: developer tools, languages, identifiers, protocols and symbols.
+- `work.txt`: team names, product names, customer names and workplace jargon.
+- `personal.txt`: names, places, acronyms and phrases you use outside work.
 
 Each file uses one term per line. Lines beginning with `#` are comments.
 
@@ -39,4 +39,4 @@ Add per-project terms under `config/vocab/projects/`:
 config/vocab/projects/my-repo.txt
 ```
 
-Use one term per line. Project vocab is intended for repo names, internal package names, acronyms, and domain-specific jargon. Do not publish private customer data or secrets in project vocab files.
+Use one term per line. Project vocab is intended for repo names, internal package names, acronyms and domain-specific jargon. Do not publish private customer data or secrets in project vocab files.

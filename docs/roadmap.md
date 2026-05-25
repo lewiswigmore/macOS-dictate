@@ -4,7 +4,7 @@
 
 Public roadmap, dated 2026.
 
-## v0.1 — Current
+## v0.1. Current
 
 Public OSS release:
 
@@ -13,9 +13,9 @@ Public OSS release:
 - Local WebUI history viewer
 - Vocab presets
 - Voice commands
-- MLX Whisper backend for Apple Silicon — shipped opt-in
+- MLX Whisper backend for Apple Silicon, shipped opt-in
 
-## v0.2 — Integrations
+## v0.2. Integrations
 
 - Raycast extension
 - AppleScript dictionary (activates when packaged as `.app`)
@@ -25,13 +25,13 @@ Out of scope: native Shortcuts.app App Intents. Those require a Swift binary
 and an Xcode project, which conflicts with dictate's lightweight, pure-Python
 design. The URL scheme + AppleScript dictionary cover the same use cases.
 
-## v0.3 — ASR depth
+## v0.3. ASR depth
 
 - Streaming partial inserts
 - Code-grammar mode
 - Replacement dictionary layer
 
-## v0.4 — Polish
+## v0.4. Polish
 
 - App icon + DMG packaging
 - Sparkle auto-updates
