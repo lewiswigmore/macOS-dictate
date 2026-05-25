@@ -1,0 +1,39 @@
+# Bundle identifier -> preset. Unknown apps fall back to `default`.
+# Find an app's bundle id with:
+#   osascript -e 'id of app "AppName"'
+
+# Code / terminals
+com.apple.Terminal: code
+com.googlecode.iterm2: code
+com.mitchellh.ghostty: code
+com.microsoft.VSCode: code
+com.microsoft.VSCodeInsiders: code
+com.visualstudio.code.oss: code
+com.apple.dt.Xcode: code
+com.jetbrains.intellij: code
+com.jetbrains.pycharm: code
+com.jetbrains.goland: code
+com.jetbrains.WebStorm: code
+com.jetbrains.CLion: code
+com.sublimetext.4: code
+com.todesktop.230313mzl4w4u92: code   # Cursor
+
+# Chat
+com.tinyspeck.slackmacgap: chat
+com.apple.MobileSMS: chat
+com.hnc.Discord: chat
+com.microsoft.teams2: chat
+com.tdesktop.Telegram: chat
+
+# Prose
+com.apple.mail: prose
+com.apple.Notes: prose
+com.apple.TextEdit: prose
+md.obsidian: prose
+com.literatureandlatte.scrivener3: prose
+notion.id: prose
+com.apple.Safari: prose
+com.google.Chrome: prose
+com.brave.Browser: prose
+org.mozilla.firefox: prose
+company.thebrowser.Browser: prose     # Arc

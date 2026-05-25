@@ -1,0 +1,148 @@
+# dictate main settings
+
+asr:
+  backend: faster-whisper           # faster-whisper | mlx | apple (on-device SFSpeech)
+  model: small.en                   # tiny.en | base.en | small.en | medium.en | large-v3
+  # mlx:
+  #   model: mlx-community/whisper-small.en-mlx  # opt-in: pip install mlx-whisper
+  compute_type: int8                # int8 (default), int8_float16, float16, float32
+  language: en                      # null for auto-detect
+  beam_partial: 1                   # while streaming
+  beam_final: 5                     # final pass
+  confidence_min: -1.0              # avg-logprob threshold; below => HUD retry
+  initial_prompt_from_vocab: true
+  apple:
+    timeout_s: 15.0                 # max wait for SFSpeech final result
+
+vocab:
+  replacements: config/vocab/replacements.txt
+
+vad:
+  enabled: true
+  threshold: 0.35                   # Silero-v2: 0.3–0.4 works best in real rooms
+  min_speech_ms: 200
+  min_silence_ms: 500               # silence to end utterance in continuous mode
+  auto_endpoint:
+    enabled: true                   # auto-stop the recording when the user stops talking
+    max_recording_ms: 60000         # hard cap; press Cmd+H again or Esc to stop sooner
+    min_silence_ms: 1500            # trailing silence before auto-stop (ignored while key is held)
+    # Note: while you are actively holding the push-to-talk key, the auto-endpoint
+    # is suppressed entirely so thinking pauses don't cut you off. It only fires in
+    # toggle/tap mode (you tapped to start) or after you release the key.
+
+cleanup:
+  enabled: true
+  backend: ollama                   # entry name in backends.yaml (default — local & private)
+  privacy_backend: ollama           # used when Privacy Mode is enabled in the menu bar
+  model: qwen2.5:3b-instruct
+  stream: true
+  timeout_seconds: 8
+  fallback_chain: [ollama, raw]     # add 'openrouter' before 'raw' if you opt into cloud
+  temperature: 0.2
+  max_tokens: 800
+  inject_few_shot: true
+  few_shot_count: 4
+  skip_if_under_chars: 80           # short transcripts paste as-is; skips LLM entirely
+                                    # → near-zero latency for commands like "open terminal"
+  smart_punctuate: true             # rule-based punctuation/casing pass when LLM is skipped
+                                    # (fast mode + short utterances). ~1ms, zero deps.
+  strip_fillers: false              # remove "um"/"uh" tokens during smart_punctuate
+  code_grammar:
+    enabled: true                   # deterministic spoken code syntax before LLM cleanup
+    presets: [code]                 # presets where code grammar is applied
+
+hotkey:
+  mods: [cmd]                       # cmd | shift | option | control
+  key: h
+  hold_threshold_ms: 250
+  double_tap_window_ms: 400
+  cancel_on_escape: true
+  swallow_combo: true               # disable native binding while running
+  pause_override_default: false
+  mode: auto                        # auto | hold | toggle
+                                    # auto   = hold-to-talk while held; tap toggles
+                                    # hold   = walkie-talkie; release always stops
+                                    # toggle = every press toggles, no hold-to-talk
+
+hud:
+  enabled: true
+  streaming: true                   # show live partial transcript
+  position: bottom-center           # bottom-center | near-caret
+  width: 480
+  vu_meter: true
+
+ui:
+  audio_cues: true                  # short system sound on recording start / end / cancel
+  indicator: true                   # faint screen-edge pill that flashes on start / end / cancel
+
+typer:
+  refuse_on_secure_input: true      # refuse paste while macOS Secure Event Input is active
+  paste_wait_ms: 50                 # wait after Cmd+V so slow apps/clipboard managers observe it
+
+history:
+  enabled: true
+  keep_audio: false
+  path: ~/dictate/history.jsonl
+  max_entries: 5000
+
+  # Privacy controls -----------------------------------------------------------
+  # auto_purge_days: delete entries older than N days on startup + every 24 h.
+  # Set to 0 to disable automatic purging (manual purge still available in the
+  # WebUI and via `dictate purge --older-than DAYS`).
+  auto_purge_days: 0
+  auto_purge_on_start: true
+
+  # Field-level redaction at write time. If any toggle is false, that field is
+  # never written to history.jsonl in the first place — not just hidden from
+  # the WebUI. Pre-existing entries are untouched.
+  store_raw: true                   # raw ASR transcript before LLM cleanup
+  store_cleaned: true               # cleaned/punctuated transcript
+  store_app_bundle: true            # frontmost application bundle id
+  store_selection: false            # accessibility selection context (never on by default)
+
+  # Bundle ids that bypass history entirely. Anything you dictate while one of
+  # these apps is frontmost is typed but never persisted. Useful for password
+  # managers, banking apps, private chats.
+  incognito_apps:
+    - com.1password.1password
+    - com.agilebits.onepassword7
+    - com.lastpass.LastPassMacDesktop
+    - com.apple.Passwords
+    - org.signal.Signal
+    - com.tinyspeck.slackmacgap.privatebrowsing
+
+learn:
+  enabled: true
+  watch_window_seconds: 30
+  poll_interval_seconds: 1.0        # how often to re-read the focused field to detect corrections
+  max_corrections_per_preset: 50
+
+health:
+  enabled: true
+  interval_seconds: 30
+  unhealthy_threshold_seconds: 60   # before auto-fallback
+
+logging:
+  level: INFO
+  json: true
+  file: ~/dictate/logs/dictate.log
+  rotate_days: 7
+
+autolaunch:
+  installed: false                  # informational; managed by install.sh --autolaunch
+
+webui:
+  autostart: true                   # start the local history viewer alongside dictate
+  host: 127.0.0.1                   # loopback-only is enforced regardless
+  port: 47843
+  open_on_start: false              # open browser automatically on autostart
+
+# Optional overrides ---------------------------------------------------------
+# models:
+#   dir: ~/dictate/models           # whisper + silero VAD models cache root
+# context:
+#   project_search_roots:           # used by IDE detection to resolve project paths
+#     - ~/Developer
+#     - ~/Projects
+#     - ~/code
+#     - ~/src

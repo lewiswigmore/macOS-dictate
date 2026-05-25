@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  dictate monochrome glyph — for the macOS menu-bar (template image) or any
+  context that needs a single-colour silhouette. Rendered without the squircle
+  background so it composites cleanly over any surface.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <g fill="#000000">
+    <rect x="412" y="232" width="200" height="368" rx="100" ry="100"/>
+    <path d="
+      M 312 472
+      v 56
+      a 200 200 0 0 0 400 0
+      v -56
+      h -56
+      v 56
+      a 144 144 0 0 1 -288 0
+      v -56
+      z" />
+    <rect x="488" y="720" width="48" height="92" rx="12"/>
+    <rect x="392" y="792" width="240" height="40" rx="20"/>
+  </g>
+</svg>

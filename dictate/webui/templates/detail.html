@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section id="detail" data-entry-id="{{ entry_id }}">
+  <header class="detail-header">
+    <div class="detail-breadcrumb">
+      <a href="/" class="back-link">← All transcripts</a>
+      <div class="entry-nav" id="entry-nav"></div>
+    </div>
+    <div class="detail-title-row">
+      <div>
+        <h1 id="detail-time">Loading…</h1>
+        <div class="chip-row" id="detail-chips"></div>
+      </div>
+      <div class="toolbar detail-actions">
+        <button id="copy-cleaned" aria-label="Copy cleaned transcript">Copy cleaned</button>
+        <button id="copy-raw" aria-label="Copy raw transcript">Copy raw</button>
+        <button id="delete-detail" class="danger" aria-label="Delete transcript">Delete</button>
+      </div>
+    </div>
+  </header>
+  <div id="detail-content" class="muted">Loading…</div>
+</section>
+{% endblock %}

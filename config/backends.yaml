@@ -1,0 +1,22 @@
+# OpenAI-compatible cleanup backends.
+# All use POST {base_url}/chat/completions with Bearer auth.
+# Swap the active backend via settings.yaml -> cleanup.backend.
+#
+# dictate is privacy-first: the default backend is Ollama running locally.
+# OpenRouter is included as an optional cloud backend for users who want
+# access to larger / more capable models. Cloud backends always run through
+# the secret-redactor (config/redact.yaml) before sending text.
+
+ollama:
+  base_url: http://127.0.0.1:11434/v1
+  api_key_env: null
+  default_model: qwen2.5:3b-instruct   # tiny + fast; `ollama list` for alternatives
+  redact: false                         # fully local
+  health_path: /models
+
+openrouter:
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY
+  default_model: openai/gpt-4o-mini
+  redact: true                          # cloud; always redact secrets
+  health_path: /models
