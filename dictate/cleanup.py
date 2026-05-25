@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import secrets
 import time
 from typing import Any
 
@@ -62,6 +63,133 @@ class CleanupClient:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
+        self._ollama_resolution: dict[tuple[str, str], str | None] = {}
+
+    @staticmethod
+    def _is_ollama_backend(backend: Any) -> bool:
+        base = (backend.base_url or "").lower()
+        return ":11434" in base or "ollama" in base
+
+    @staticmethod
+    def _pick_best_ollama_model(
+        installed: list[str], configured: str | None
+    ) -> str | None:
+        if not installed:
+            return None
+        if configured and configured in installed:
+            return configured
+
+        def parse_size_b(name: str) -> float:
+            m = re.search(r"(\d+(?:\.\d+)?)\s*b\b", name.lower())
+            return float(m.group(1)) if m else 50.0
+
+        def score(name: str) -> tuple[int, float, float]:
+            n = name.lower()
+            if "embed" in n:
+                return (99, 0, 0)
+            # Tier: prefer instruct/chat, then known general LLMs, deprioritise coder.
+            if "instruct" in n:
+                tier = 0
+            elif "chat" in n:
+                tier = 1
+            elif "coder" in n or "code" in n:
+                tier = 3
+            elif any(p in n for p in ("qwen", "llama", "mistral", "hermes", "phi", "gemma")):
+                tier = 2
+            else:
+                tier = 4
+            size_b = parse_size_b(n)
+            # Cleanup needs >=3B for reliable grammar-without-summarising.
+            # Penalise anything smaller heavily.
+            too_small = 0 if size_b >= 3.0 else 1
+            # Among >=3B, prefer the smallest (latency); among <3B, prefer the largest.
+            size_score = size_b if too_small == 0 else -size_b
+            return (too_small, tier, size_score)
+
+        ranked = sorted(installed, key=score)
+        return ranked[0]
+
+    @staticmethod
+    def _looks_summarised(raw: str, cleaned: str) -> bool:
+        """Heuristic: cleaned output is suspiciously shorter than the raw.
+
+        Cleanup removes filler/repeats, so a small shrink (~10-25%) is normal.
+        A drop below 50% of input on inputs >80 chars almost always means the
+        model summarised, answered, or refused — never legitimate cleanup.
+        """
+        raw_len = len(raw.strip())
+        clean_len = len(cleaned.strip())
+        if raw_len < 80:
+            return False
+        return clean_len < raw_len * 0.5
+
+    @staticmethod
+    def _list_ollama_models(base_url: str) -> list[str]:
+        """Synchronously list installed Ollama models for dashboard health UI."""
+        if not base_url:
+            return []
+        root = re.sub(r"/v\d+/?$", "", base_url).rstrip("/")
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get(f"{root}/api/tags")
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception:  # noqa: BLE001
+            return []
+        names = [m.get("name") or m.get("model") for m in data.get("models", [])]
+        return [n for n in names if n]
+
+    async def _resolve_ollama_model(
+        self, backend: Any, configured_model: str
+    ) -> str:
+        if not self._is_ollama_backend(backend):
+            return configured_model
+        cache_key = (backend.base_url, configured_model)
+        if cache_key in self._ollama_resolution:
+            cached = self._ollama_resolution[cache_key]
+            return cached or configured_model
+        # /api/tags lives on the bare Ollama root, not /v1
+        root = re.sub(r"/v\d+/?$", "", backend.base_url).rstrip("/")
+        tags_url = f"{root}/api/tags"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                resp = await client.get(tags_url)
+                resp.raise_for_status()
+                data = resp.json()
+            installed = [m.get("name") or m.get("model") for m in data.get("models", [])]
+            installed = [m for m in installed if m]
+        except Exception as exc:  # noqa: BLE001
+            log.debug("ollama tag lookup failed: %s", exc)
+            self._ollama_resolution[cache_key] = None
+            return configured_model
+        chosen = self._pick_best_ollama_model(installed, configured_model)
+        if chosen and chosen != configured_model:
+            log.warning(
+                "cleanup model %r not installed in Ollama; using %r instead "
+                "(available: %s). Run `ollama pull %s` to use the configured model.",
+                configured_model, chosen, ", ".join(installed), configured_model,
+            )
+        self._ollama_resolution[cache_key] = chosen
+        return chosen or configured_model
+
+    # Built-in few-shot examples that demonstrate the "preserve verbatim, just
+    # tidy" contract. These reinforce the length guard and stop small instruct
+    # models from summarising long dictations into a 1-line answer.
+    _BUILTIN_FEW_SHOT: tuple[tuple[str, str], ...] = (
+        (
+            "<DICTATION>\nso um can we do a bit of a better job of making this dashboard "
+            "you know more like a real product um with recent chats and health and things "
+            "rather than just dropping straight into history because right now it feels a "
+            "little bit raw\n</DICTATION>",
+            "So, can we do a bit of a better job of making this dashboard more like a real "
+            "product, with recent chats and health and things, rather than just dropping "
+            "straight into history? Because right now it feels a little bit raw.",
+        ),
+        (
+            "<DICTATION>\nuh remind me to pick up groceries after the gym tomorrow\n</DICTATION>",
+            "Remind me to pick up groceries after the gym tomorrow.",
+        ),
+    )
 
     def _build_messages(
         self,
@@ -80,11 +208,29 @@ class CleanupClient:
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system_text}]
 
+        # Built-in examples first, then any learned corrections from learn.py.
+        # The first example is intentionally long to anchor length preservation.
+        if selection is None:
+            for user_ex, assistant_ex in self._BUILTIN_FEW_SHOT:
+                messages.append({"role": "user", "content": user_ex})
+                messages.append({"role": "assistant", "content": assistant_ex})
+
         for user_ex, assistant_ex in few_shot or []:
             messages.append({"role": "user", "content": user_ex})
             messages.append({"role": "assistant", "content": assistant_ex})
 
-        messages.append({"role": "user", "content": raw})
+        # Fence the live dictation so the model treats it as data, not as a
+        # prompt directed at itself. Critical for small instruct models that
+        # would otherwise answer "Can we…" style dictations.
+        # Defense in depth: (1) random per-request tag so a malicious dictation
+        # cannot predict and close the fence, (2) escape any literal
+        # </DICTATION> the user did manage to dictate.
+        nonce = secrets.token_hex(4)
+        open_tag = f"<DICTATION_{nonce}>"
+        close_tag = f"</DICTATION_{nonce}>"
+        safe_raw = re.sub(r"</DICTATION[A-Za-z0-9_]*>", "[/]", raw, flags=re.IGNORECASE)
+        fenced = f"{open_tag}\n{safe_raw}\n{close_tag}"
+        messages.append({"role": "user", "content": fenced})
         return messages
 
     async def _stream_response(
@@ -139,6 +285,7 @@ class CleanupClient:
             model = cfg.get("cleanup.model", backend.default_model)
         else:
             model = backend.default_model
+        model = await self._resolve_ollama_model(backend, model)
         temperature = cfg.get("cleanup.temperature", 0.2)
         max_tokens = cfg.get("cleanup.max_tokens", 800)
         stream = cfg.get("cleanup.stream", True)
@@ -266,6 +413,27 @@ class CleanupClient:
                         extra={"extras": {"backend": backend_name}},
                     )
                     return source, {**metrics, "used_fallback": True}
+                # Summarisation guard: if the cleaned text is dramatically
+                # shorter than the input, the model almost certainly summarised
+                # or answered the dictation instead of cleaning it. Fall back
+                # to the raw transcript so we don't lose user content.
+                if self._looks_summarised(source, text):
+                    log.warning(
+                        "cleanup output looks summarised (%d → %d chars); "
+                        "falling back to raw transcript",
+                        len(source), len(text),
+                        extra={"extras": {
+                            "backend": backend_name,
+                            "raw_len": len(source),
+                            "cleaned_len": len(text),
+                        }},
+                    )
+                    return source, {
+                        **metrics,
+                        "used_fallback": True,
+                        "cleanup_skipped": "summarisation_detected",
+                        "backend": "raw",
+                    }
                 if i > 0:
                     metrics["used_fallback"] = True
                 return text, metrics

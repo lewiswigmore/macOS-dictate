@@ -28,12 +28,12 @@
         {% set ns.last_group = pref.group %}
       {% endif %}
       <div class="pref-row" data-key="{{ pref.key }}" data-kind="{{ pref.kind }}">
-        <label for="pref-{{ loop.index }}">
-          <span class="pref-label">{{ pref.label }}</span>
+        <label {% if pref.kind != 'bool' %}for="pref-{{ loop.index }}"{% endif %}>
+          <span class="pref-label" id="pref-label-{{ loop.index }}">{{ pref.label }}</span>
           <span class="pref-key"><code>{{ pref.key }}</code></span>
         </label>
         {% if pref.kind == 'bool' %}
-          <input type="checkbox" id="pref-{{ loop.index }}" {% if pref.value %}checked{% endif %}>
+          <input type="checkbox" id="pref-{{ loop.index }}" aria-labelledby="pref-label-{{ loop.index }}" {% if pref.value %}checked{% endif %}>
         {% elif pref.choices %}
           <select id="pref-{{ loop.index }}">
             {% for c in pref.choices %}

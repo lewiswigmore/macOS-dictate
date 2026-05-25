@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="detail-header dashboard-hero">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Your voice, on this Mac. Review what you dictated, see how it ran, nothing leaves the device.</p>
+    <div class="hero-chips">
+      <span class="hero-chip" title="Press to start dictating"><span class="chip-key">Hotkey</span><kbd id="hero-hotkey">…</kbd></span>
+      <span class="hero-chip" title="All processing runs locally on this Mac"><span class="chip-dot ok"></span>100% local</span>
+    </div>
+  </div>
+  <div class="dashboard-hero-meta">
+    <a class="chip" href="/history" title="Open the full transcript history">Browse all transcripts →</a>
+  </div>
+</header>
+
+<section class="kpi-row" aria-label="Today's activity">
+  <article class="kpi-tile kpi-tile-wide">
+    <span class="kpi-label">Utterances today</span>
+    <div class="kpi-main">
+      <strong id="kpi-today-count" class="kpi-value">—</strong>
+      <canvas id="kpi-sparkline" class="kpi-sparkline" width="120" height="36" aria-label="7-day activity"></canvas>
+    </div>
+    <span id="kpi-today-rate" class="kpi-sub muted"></span>
+  </article>
+  <article class="kpi-tile">
+    <span class="kpi-label">Characters today</span>
+    <strong id="kpi-today-chars" class="kpi-value">—</strong>
+    <span id="kpi-today-words" class="kpi-sub muted"></span>
+  </article>
+  <article class="kpi-tile">
+    <span class="kpi-label">Avg cleanup latency</span>
+    <strong id="kpi-today-latency" class="kpi-value">—</strong>
+    <span class="kpi-sub muted">last 24 h</span>
+  </article>
+  <article class="kpi-tile">
+    <span class="kpi-label">Total in history</span>
+    <strong id="kpi-total" class="kpi-value">—</strong>
+    <span id="kpi-last-updated" class="kpi-sub muted"></span>
+  </article>
+</section>
+
+<div class="dashboard-grid">
+  <section class="panel dashboard-recent" aria-labelledby="recent-title">
+    <div class="panel-head">
+      <h2 id="recent-title">Recent dictations</h2>
+      <a class="ghost-link" href="/history">View all →</a>
+    </div>
+    <ol id="recent-list" class="recent-list" aria-live="polite">
+      <li class="muted recent-empty">Loading…</li>
+    </ol>
+  </section>
+
+  <aside class="dashboard-side">
+    <section id="suggestions-panel" class="panel suggestions-panel" hidden aria-labelledby="suggestions-title">
+      <div class="panel-head"><h2 id="suggestions-title">Suggestions</h2></div>
+      <ul id="suggestions-list" class="suggestions-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="health-title">
+      <div class="panel-head">
+        <h2 id="health-title">System health</h2>
+        <span id="health-refresh" class="muted small">checked just now</span>
+      </div>
+      <ul id="health-list" class="health-list">
+        <li class="muted">Loading…</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="quick-title">
+      <div class="panel-head"><h2 id="quick-title">Quick actions</h2></div>
+      <div class="quick-actions">
+        <a class="action-tile" href="/history">
+          <span class="action-name">Browse history</span>
+          <span class="muted small">Search, filter, export</span>
+        </a>
+        <a class="action-tile" href="/stats">
+          <span class="action-name">View stats</span>
+          <span class="muted small">30-day trends</span>
+        </a>
+        <a class="action-tile" href="/settings">
+          <span class="action-name">Settings</span>
+          <span class="muted small">Privacy, backends, hotkey</span>
+        </a>
+        <a class="action-tile" href="/api/export?format=jsonl" download>
+          <span class="action-name">Export JSONL</span>
+          <span class="muted small">All entries</span>
+        </a>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

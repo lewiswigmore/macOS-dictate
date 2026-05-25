@@ -30,7 +30,11 @@ PERMISSION_LABELS = {
 EDITABLE_PREFS: list[tuple[str, str, str, str]] = [
     ("webui.autostart", "bool", "Start WebUI with dictate", "WebUI"),
     ("webui.open_on_start", "bool", "Open browser on autostart", "WebUI"),
+    ("cleanup.enabled", "bool", "Enable LLM cleanup (off = use raw dictation + smart punctuation)", "Cleanup"),
+    ("cleanup.backend", "enum:ollama,openrouter", "Cleanup backend (when enabled)", "Cleanup"),
+    ("cleanup.model", "string", "Cleanup model", "Cleanup"),
     ("cleanup.code_grammar.enabled", "bool", "Code grammar mode", "Cleanup"),
+    ("cleanup.smart_punctuate", "bool", "Smart punctuation when LLM skipped", "Cleanup"),
     ("learn.enabled", "bool", "Correction learning", "Pipeline"),
     ("health.enabled", "bool", "Backend health checks", "Pipeline"),
     ("typer.refuse_on_secure_input", "bool", "Refuse to type into secure fields", "Typer"),
@@ -72,12 +76,44 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
         }
 
     @router.get("/", response_class=HTMLResponse)
-    async def index(request: Request) -> HTMLResponse:
+    async def dashboard_page(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "dashboard.html",
+            page_context(title="Dashboard"),
+        )
+
+    @router.get("/history", response_class=HTMLResponse)
+    async def history_page(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(
             request,
             "index.html",
             page_context(title="History", entries=store.list(limit=1)),
         )
+
+    @router.get("/api/dashboard")
+    async def dashboard_data() -> dict[str, Any]:
+        stats = store.stats()
+        # Last 7 day-counts for the sparkline (oldest → newest).
+        by_day = stats.get("by_day", {})
+        last_7 = list(by_day.items())[-7:]
+        health = _dashboard_health(config)
+        return {
+            "today": store.today_summary(),
+            "recent": [
+                entry.model_dump(mode="json") for entry in store.recent(limit=8)
+            ],
+            "health": health,
+            "totals": {
+                "entries": store.count(),
+                "last_updated": store.last_updated().isoformat()
+                if store.last_updated()
+                else None,
+            },
+            "sparkline_7d": [{"day": d, "count": c} for d, c in last_7],
+            "hotkey": _hotkey_label(config),
+            "suggestions": _dashboard_suggestions(config, health, stats),
+        }
 
     @router.get("/entry/{id}", response_class=HTMLResponse)
     async def detail(request: Request, id: str) -> HTMLResponse:
@@ -186,6 +222,116 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
     return router
 
 
+def _dashboard_health(config: Config) -> dict[str, Any]:
+    import time
+    from urllib.parse import urlparse
+
+    import httpx
+
+    cleanup_enabled = bool(config.get("cleanup.enabled", False))
+    backend_name = str(config.get("cleanup.backend", "ollama"))
+    out: dict[str, Any] = {
+        "cleanup_enabled": cleanup_enabled,
+        "active_backend": backend_name if cleanup_enabled else "raw",
+        "configured_model": config.get("cleanup.model") if cleanup_enabled else None,
+        "resolved_model": None,
+        "backend": {"name": backend_name, "ok": True, "latency_ms": None, "error": None},
+        "permissions": _permissions_status() or [],
+    }
+
+    if not cleanup_enabled:
+        out["backend"]["note"] = "LLM cleanup disabled — raw + smart punctuation"
+        return out
+
+    try:
+        spec = config.backend(backend_name)
+        url = spec.health_url
+        host = urlparse(url).hostname or ""
+        out["backend"]["ok"] = False
+        out["backend"]["url"] = url
+        out["backend"]["host"] = host
+        t0 = time.monotonic()
+        with httpx.Client(timeout=2.5) as client:
+            resp = client.get(url, headers=spec.auth_headers())
+        out["backend"]["latency_ms"] = int((time.monotonic() - t0) * 1000)
+        out["backend"]["ok"] = resp.is_success
+        if not resp.is_success:
+            out["backend"]["error"] = f"HTTP {resp.status_code}"
+    except Exception as exc:  # noqa: BLE001
+        out["backend"]["error"] = str(exc)
+        spec = None
+
+    try:
+        from dictate.cleanup import CleanupClient
+
+        base_url = getattr(spec, "base_url", None) if spec else None
+        installed = CleanupClient._list_ollama_models(base_url) if base_url else []
+        if installed:
+            out["resolved_model"] = CleanupClient._pick_best_ollama_model(
+                installed, str(config.get("cleanup.model") or "")
+            )
+            out["installed_models"] = installed
+    except Exception:  # noqa: BLE001
+        pass
+
+    return out
+
+
+def _hotkey_label(config: Config) -> str:
+    mods = config.get("hotkey.mods", ["cmd"]) or ["cmd"]
+    key = str(config.get("hotkey.key", "h")).upper()
+    symbols = {"cmd": "⌘", "shift": "⇧", "option": "⌥", "control": "⌃"}
+    return "".join(symbols.get(str(m).lower(), str(m).upper()) for m in mods) + key
+
+
+def _dashboard_suggestions(
+    config: Config, health: dict[str, Any], stats: dict[str, Any]
+) -> list[dict[str, str]]:
+    """Surface actionable hints based on current configuration and runtime state.
+
+    Each suggestion: {kind: info|warn, title, detail, action_label, action_href}.
+    Kept short — at most three so the panel never becomes noise.
+    """
+    out: list[dict[str, str]] = []
+
+    backend = health.get("backend") or {}
+    if not backend.get("ok"):
+        out.append({
+            "kind": "warn",
+            "title": "Cleanup backend unreachable",
+            "detail": backend.get("error") or "Backend did not respond.",
+            "action_label": "Open settings",
+            "action_href": "/settings",
+        })
+
+    perms = health.get("permissions") or []
+    missing = [p for p in perms if isinstance(p, dict) and not p.get("granted")]
+    if missing:
+        labels = ", ".join(str(p.get("label")) for p in missing)
+        out.append({
+            "kind": "warn",
+            "title": "Missing macOS permissions",
+            "detail": f"Not granted yet: {labels}. Dictate needs these to record and paste.",
+            "action_label": "Grant in Settings",
+            "action_href": "/settings",
+        })
+
+    purge_days = int(config.get("history.auto_purge_days", 0) or 0)
+    if purge_days == 0 and stats.get("total", 0) > 50:
+        out.append({
+            "kind": "info",
+            "title": "Auto-purge is off",
+            "detail": (
+                "You have a growing history with no retention limit. "
+                "Set a purge window so old transcripts roll off automatically."
+            ),
+            "action_label": "Set retention",
+            "action_href": "/settings",
+        })
+
+    return out[:3]
+
+
 def _redact_secrets(value: Any, key: str | None = None) -> Any:
     if key and SECRET_KEY_RE.search(key):
         return "***"
@@ -208,7 +354,7 @@ def _highlight_yaml(yaml_text: str) -> Markup:
             )
         else:
             highlighted.append(str(escape(line)))
-    return Markup("\n".join(highlighted))
+    return Markup("\n".join(highlighted))  # nosec B704 - all interpolated values pass through escape()
 
 
 def _permissions_status() -> list[dict[str, object]] | None:

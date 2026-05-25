@@ -171,7 +171,7 @@ def _has_hf_snapshot(model: str, cache_dir: Path) -> bool:
     try:
         from huggingface_hub import snapshot_download
 
-        snapshot_download(model, cache_dir=str(cache_dir), local_files_only=True)
+        snapshot_download(model, cache_dir=str(cache_dir), local_files_only=True)  # nosec B615 - local_files_only=True forbids any network fetch; this is a cache probe.
         return True
     except Exception:  # noqa: BLE001
         return False

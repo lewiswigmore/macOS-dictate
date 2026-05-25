@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Report a security vulnerability
+    url: https://github.com/lewiswigmore/macOS-dictate/security/advisories/new
+    about: Please report security issues privately via GitHub Security Advisories, NOT public issues.
+  - name: 💬 Discussions / questions
+    url: https://github.com/lewiswigmore/macOS-dictate/discussions
+    about: Have a question, idea, or want to show what you built? Start a discussion.

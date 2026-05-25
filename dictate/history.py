@@ -39,10 +39,17 @@ def _ensure_secure_mode(path: Path) -> None:
     indefinitely. Even on a single-user Mac, other processes running as the
     same user (browser extensions, third-party tools) can read 0644 files in
     the home directory. Keep the perm tight; cheap idempotent call.
+
+    Refuses to follow symlinks so a hostile config that points history.path
+    at e.g. ~/.ssh/authorized_keys cannot trick us into changing the perms
+    of a sensitive file.
     """
     try:
-        os.chmod(path, _HISTORY_FILE_MODE)
-    except OSError as exc:
+        if path.is_symlink():
+            log.warning("refusing to chmod symlinked history path %s", path)
+            return
+        os.chmod(path, _HISTORY_FILE_MODE, follow_symlinks=False)
+    except (OSError, NotImplementedError) as exc:
         log.warning("could not chmod history file %s: %s", path, exc)
 
 

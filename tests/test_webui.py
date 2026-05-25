@@ -35,7 +35,7 @@ def history_path(tmp_path: Path) -> Path:
             "cleaned": "Bar meeting note.",
             "preset": "chat",
             "frontmost": {"bundle_id": "com.apple.TextEdit", "app_name": "TextEdit"},
-            "metrics": {"backend": "openwire", "latency_ms": 800, "used_fallback": True},
+            "metrics": {"backend": "openrouter", "latency_ms": 800, "used_fallback": True},
         },
     ]
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
@@ -49,13 +49,17 @@ def cfg(tmp_path: Path, history_path: Path) -> Config:
 
 @pytest.fixture
 def client(cfg: Config) -> TestClient:
-    return TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc.headers.update({"X-Dictate-WebUI": "1"})
+    return tc
 
 
 @pytest.fixture
 def empty_client(tmp_path: Path) -> TestClient:
     cfg = Config(root=tmp_path, settings={"history": {"path": str(tmp_path / "empty.jsonl")}})
-    return TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc.headers.update({"X-Dictate-WebUI": "1"})
+    return tc
 
 
 def test_index_returns_html(client: TestClient) -> None:
@@ -65,16 +69,44 @@ def test_index_returns_html(client: TestClient) -> None:
     assert 'class="brand-name"' in response.text
     assert "Dictate" in response.text
     assert response.headers["Content-Security-Policy"] == (
-        "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'"
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; script-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     )
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["Referrer-Policy"] == "no-referrer"
 
 
 def test_empty_state_rendered(empty_client: TestClient) -> None:
-    response = empty_client.get("/")
+    response = empty_client.get("/history")
     assert response.status_code == 200
     assert "No dictations yet" in response.text
+
+
+def test_dashboard_route_returns_html(client: TestClient) -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert ">Dashboard<" in response.text
+    assert "kpi-row" in response.text
+
+
+def test_history_route_returns_table(client: TestClient) -> None:
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert "transcripts" in response.text
+
+
+def test_dashboard_api_returns_kpis_and_health(client: TestClient) -> None:
+    response = client.get("/api/dashboard")
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body) >= {"today", "recent", "health", "totals"}
+    assert {"count", "chars", "avg_latency_ms", "fallback_rate"} <= set(body["today"])
+    assert isinstance(body["recent"], list)
+    assert len(body["recent"]) <= 6
+    assert "active_backend" in body["health"]
+    assert "permissions" in body["health"]
+    assert "entries" in body["totals"]
 
 
 def test_dark_mode_css_present(client: TestClient) -> None:
@@ -85,10 +117,11 @@ def test_dark_mode_css_present(client: TestClient) -> None:
     assert "var(--fg)" in response.text
 
 
-def test_total_in_nav(client: TestClient) -> None:
+def test_nav_has_history_link(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert "2 entries" in response.text
+    assert 'href="/history"' in response.text
+    assert ">History<" in response.text
 
 
 def test_api_transcripts_returns_fixture_entries(client: TestClient) -> None:
@@ -154,3 +187,45 @@ def test_loopback_middleware_rejects_non_loopback(cfg: Config) -> None:
     blocked_client = TestClient(create_app(cfg), client=("10.1.2.3", 50000))
     response = blocked_client.get("/api/stats")
     assert response.status_code == 403
+
+
+def test_csrf_blocks_mutations_without_header(cfg: Config) -> None:
+    """A malicious cross-origin page hitting localhost POSTs without our custom
+    header must be rejected, otherwise CSRF on settings/purge/delete is trivial."""
+    bare = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    assert bare.get("/api/stats").status_code == 200  # GET still works
+    assert bare.post("/api/settings/pref", json={"key": "webui.autostart", "value": False}).status_code == 403
+    assert bare.post("/api/purge", json={"older_than_days": 1}).status_code == 403
+    assert bare.delete("/api/transcripts/anything").status_code == 403
+
+
+def test_csrf_allows_mutations_with_header(cfg: Config) -> None:
+    ok = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    ok.headers.update({"X-Dictate-WebUI": "1"})
+    res = ok.post("/api/settings/pref", json={"key": "webui.autostart", "value": False})
+    assert res.status_code == 200
+
+
+def test_clickjacking_and_csp_headers_present(client: TestClient) -> None:
+    res = client.get("/")
+    assert res.headers.get("X-Frame-Options") == "DENY"
+    csp = res.headers.get("Content-Security-Policy") or ""
+    assert "frame-ancestors 'none'" in csp
+    assert "base-uri 'none'" in csp
+
+
+def test_history_path_symlink_is_refused(tmp_path: Path) -> None:
+    """Hostile config that aims history.path at e.g. ~/.ssh/authorized_keys
+    must not be writable through dictate."""
+    import os as _os
+
+    from dictate.webui.store import HistoryStore
+
+    target = tmp_path / "real.jsonl"
+    target.write_text(json.dumps({"ts": "2025-01-01T00:00:00Z", "raw": "hi"}) + "\n")
+    link = tmp_path / "history.jsonl"
+    _os.symlink(target, link)
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(link)}})
+    store = HistoryStore(cfg)
+    with pytest.raises(PermissionError):
+        store._write_rows_unlocked([{"ts": "2025-01-01T00:00:00Z", "raw": "hi"}])
