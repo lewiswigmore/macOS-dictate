@@ -58,10 +58,10 @@ jobs:
 
       - name: Security audit (pip-audit)
         run: |
-          pip install pip-audit
+          pip install 'pip-audit==2.10.0'
           pip-audit --strict --ignore-vuln GHSA-4xh5-x5gv-qwph || true
 
       - name: Static security analysis (bandit)
         run: |
-          pip install bandit
+          pip install 'bandit==1.9.4'
           bandit -r dictate -ll

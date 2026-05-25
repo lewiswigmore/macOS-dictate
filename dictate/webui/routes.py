@@ -16,7 +16,10 @@ from starlette.requests import Request
 
 from dictate import config as config_module
 from dictate.config import Config
+from dictate.logging_setup import get_logger
 from dictate.webui.store import HistoryStore
+
+log = get_logger(__name__)
 
 SECRET_KEY_RE = re.compile(r"key|token|secret|password", re.IGNORECASE)
 PERMISSION_LABELS = {
@@ -159,7 +162,8 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
         try:
             config.persist_pref(payload.key, value)
         except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=f"persist failed: {exc}") from exc
+            log.exception("webui: persist_pref failed for key=%s", payload.key)
+            raise HTTPException(status_code=500, detail="persist failed") from exc
         return {"key": payload.key, "value": value, "prefs_path": str(config.prefs_path)}
 
     @router.get("/api/transcripts")
@@ -258,7 +262,8 @@ def _dashboard_health(config: Config) -> dict[str, Any]:
         if not resp.is_success:
             out["backend"]["error"] = f"HTTP {resp.status_code}"
     except Exception as exc:  # noqa: BLE001
-        out["backend"]["error"] = str(exc)
+        log.warning("webui: dashboard backend probe failed: %s", type(exc).__name__)
+        out["backend"]["error"] = "probe failed"
         spec = None
 
     try:
