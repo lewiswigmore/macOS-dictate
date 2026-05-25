@@ -1,0 +1,3 @@
+# Personal vocabulary — one term per line.
+# Add names, jargon, acronyms you frequently dictate.
+# This file is loaded for the "personal" preset.

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="detail-header">
+  <h1>History</h1>
+  <p class="muted">All transcripts dictated locally on this Mac.</p>
+</header>
+
+<section class="panel" aria-labelledby="filters-title">
+  <h2 id="filters-title" class="visually-hidden">Filters</h2>
+  <div class="filters-row">
+    <input id="search" type="search" placeholder="Search transcripts…" autocomplete="off" aria-label="Search transcripts">
+    <input id="preset" type="text" placeholder="Preset" aria-label="Filter by preset">
+    <input id="app" type="text" placeholder="App" aria-label="Filter by app">
+    <input id="since" type="date" aria-label="Since date">
+    <div class="filters-actions">
+      <button id="refresh" aria-label="Refresh history">Refresh</button>
+      <details class="purge-details">
+        <summary class="btn-summary danger">Purge…</summary>
+        <form id="purge-form" class="purge-form">
+          <label for="purge-days">Delete entries older than</label>
+          <input id="purge-days" type="number" min="1" value="30" aria-label="Days to keep"> days
+          <button type="submit" id="purge" class="danger">Purge</button>
+        </form>
+      </details>
+    </div>
+  </div>
+  <div class="filters-meta">
+    <span class="muted">Export:</span>
+    <a class="chip" href="/api/export?format=jsonl" download>JSONL</a>
+    <a class="chip" href="/api/export?format=csv" download>CSV</a>
+    <a class="chip" href="/api/export?format=markdown" download>Markdown</a>
+  </div>
+</section>
+{% if entries %}
+<section class="panel" aria-labelledby="transcripts-title">
+  <h2 id="transcripts-title" class="visually-hidden">Transcripts</h2>
+  <div class="table-wrap">
+    <table class="history-table">
+      <caption class="visually-hidden">History transcripts</caption>
+      <thead><tr><th>Timestamp</th><th>Preset</th><th>App</th><th>Raw</th><th>Latency</th><th aria-label="Actions"></th></tr></thead>
+      <tbody id="transcripts"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <button id="prev" aria-label="Previous page">← Previous</button>
+    <span id="page-label"></span>
+    <button id="next" aria-label="Next page">Next →</button>
+  </div>
+</section>
+<section id="shortcut-help" class="shortcut-help" tabindex="-1" aria-labelledby="shortcut-title">
+  <h2 id="shortcut-title">Keyboard shortcuts</h2>
+  <p><kbd>/</kbd> focus search <kbd>j</kbd> / <kbd>k</kbd> next/previous entry <kbd>o</kbd> open selected <kbd>?</kbd> show this help</p>
+</section>
+{% else %}
+{% include "_empty.html" %}
+{% endif %}
+{% endblock %}

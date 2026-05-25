@@ -1,0 +1,39 @@
+# Voice commands. Each entry: pattern (regex, case-insensitive, matched against
+# the FULL final transcript after stripping punctuation/whitespace) -> action.
+# Actions: insert | scratch_last | discard | redo_last | paste_raw | stop | spell_literal
+# `insert` actions emit literal text via the typer (bypassing cleanup).
+
+- name: new_line
+  pattern: '^new line\.?$'
+  action: insert
+  text: "\n"
+
+- name: new_paragraph
+  pattern: '^new paragraph\.?$'
+  action: insert
+  text: "\n\n"
+
+- name: spell_that
+  pattern: '^spell that:?\s+([A-Za-z\s,]+)$'
+  action: spell_literal
+
+- name: tab
+  pattern: '^tab$'
+  action: insert
+  text: "\t"
+
+- name: scratch_that
+  pattern: '^scratch that\.?$'
+  action: scratch_last
+
+- name: stop
+  pattern: '^(stop|stop\s*recording|cancel)$'
+  action: stop
+
+- name: fix_last
+  pattern: '^(fix\s*last|fix\s*that|redo|try\s*again)$'
+  action: redo_last
+
+- name: paste_raw
+  pattern: '^(paste\s*raw|raw\s*paste|no\s*cleanup)$'
+  action: paste_raw

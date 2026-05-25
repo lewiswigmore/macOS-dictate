@@ -1,0 +1,39 @@
+# Secret redaction patterns. Applied before sending raw transcript to any backend
+# whose `redact: true` flag is set in backends.yaml.
+# Patterns are case-insensitive Python regex. Each match -> «REDACTED:{name}».
+
+- name: openai_key
+  pattern: 'sk-[a-zA-Z0-9_-]{20,}'
+
+- name: openai_proj_key
+  pattern: 'sk-proj-[a-zA-Z0-9_-]{20,}'
+
+- name: github_pat
+  pattern: 'gh[pousr]_[a-zA-Z0-9]{30,}'
+
+- name: github_token
+  pattern: 'github_pat_[a-zA-Z0-9_]{20,}'
+
+- name: aws_access_key
+  pattern: 'AKIA[0-9A-Z]{16}'
+
+- name: aws_secret
+  pattern: '(?<![A-Za-z0-9/+=])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])'
+
+- name: slack_bot
+  pattern: 'xox[baprs]-[a-zA-Z0-9-]{10,}'
+
+- name: jwt
+  pattern: 'eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}'
+
+- name: stripe_key
+  pattern: '(sk|pk|rk)_(live|test)_[a-zA-Z0-9]{20,}'
+
+- name: env_assignment
+  pattern: '(?im)^[A-Z][A-Z0-9_]{2,}=\S+'
+
+- name: password_phrase
+  pattern: '(?i)\b(the\s+)?(password|passcode|secret|api\s*key|token)\s+is\s+\S+'
+
+- name: bearer_phrase
+  pattern: '(?i)bearer\s+[a-zA-Z0-9_.-]{20,}'

@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible problem with dictate
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Example: macOS 14.6.1 Sonoma
+    validations:
+      required: true
+  - type: input
+    id: dictate-version
+    attributes:
+      label: dictate version
+      description: Release, commit SHA, or branch name
+    validations:
+      required: true
+  - type: input
+    id: asr-backend
+    attributes:
+      label: ASR backend
+      description: Example: faster-whisper local model name
+    validations:
+      required: true
+  - type: input
+    id: cleanup-backend
+    attributes:
+      label: Cleanup backend
+      description: Example: Ollama model or disabled
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List exact steps that trigger the issue.
+      placeholder: |
+        1. Start dictate
+        2. Press ...
+        3. Say ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs snippet
+      description: Paste relevant logs. Redact secrets and private transcript content.
+      render: shell
+    validations:
+      required: false

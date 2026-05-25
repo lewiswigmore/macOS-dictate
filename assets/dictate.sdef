@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="dictate Terminology">
+    <suite name="dictate Suite" code="DcTe" description="Commands for controlling dictate.">
+        <command name="start recording" code="DcTeStrt" description="Begin a dictation session.">
+            <cocoa class="DictateStartCommand"/>
+        </command>
+        <command name="stop recording" code="DcTeStop" description="End the current dictation session.">
+            <cocoa class="DictateStopCommand"/>
+        </command>
+        <command name="toggle recording" code="DcTeTogl" description="Toggle dictation on or off.">
+            <cocoa class="DictateToggleCommand"/>
+        </command>
+        <command name="open history" code="DcTeHist" description="Open the local WebUI history viewer.">
+            <cocoa class="DictateOpenHistoryCommand"/>
+        </command>
+    </suite>
+</dictionary>

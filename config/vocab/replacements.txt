@@ -1,0 +1,7 @@
+# Replacement dictionary applied after ASR and before cleanup.
+# Format: from -> to
+# Example:
+# kubernetic -> Kubernetes
+# react js -> React
+# open ai -> OpenAI
+# vs code -> VS Code
