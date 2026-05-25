@@ -75,12 +75,12 @@ and [First run](first-run.md) for the onboarding wizard.
 ```mermaid
 flowchart LR
     Hotkey --> Recorder --> VAD --> Whisper
-    Whisper --> Commands{Voice cmd?}
+    Whisper --> Commands{"Voice cmd?"}
     Commands -- yes --> Typer
-    Commands -- no --> Redact --> Cleanup[Cleanup<br/>off by default]
-    Cleanup --> Typer --> App[Focused app]
+    Commands -- no --> Redact --> Cleanup["Cleanup (off by default)"]
+    Cleanup --> Typer --> App["Focused app"]
     Whisper --> History
-    History --> WebUI[WebUI<br/>dashboard / stats / history]
+    History --> WebUI["WebUI dashboard / stats / history"]
     History --> Learn
 ```
 
