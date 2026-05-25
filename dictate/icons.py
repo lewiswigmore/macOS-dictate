@@ -44,20 +44,21 @@ CATALOG: dict[str, str] = {
 }
 
 
-# Dictate brand mark — scattered rounded squares (viewBox 60×60). Shared with
-# the WebUI SVG. Drawn as a template NSImage so macOS tints to the menu bar.
+# Dictate brand mark — 5-column scattered cluster (viewBox 60×60). Shared
+# geometry with dictate/webui/templates/_brand_mark.html and
+# dictate/webui/static/dictate-mark.svg. Drawn as a template NSImage so
+# macOS tints it to the active menu-bar appearance. The cyan accent is
+# included here too — the template flag forces a tint regardless of fill.
 _BRAND_SHAPES: tuple[tuple[float, float, float, float], ...] = (
-    (3,  27, 6,  6),
-    (13, 16, 8,  8),
-    (13, 38, 6,  6),
-    (25,  6, 10, 10),
-    (25, 26, 8,  8),
-    (25, 44, 6,  6),
-    (39, 18, 12, 12),
-    (39, 42, 8,  8),
-    (52,  8, 6,  6),
-    (52, 32, 6,  6),
-    (52, 50, 6,  6),  # accent (cyan in UI; tinted in menubar)
+    (0,  28, 4,  4),
+    (8,  18, 8,  8),
+    (8,  34, 8,  8),
+    (22, 8,  10, 10),
+    (22, 25, 10, 10),
+    (22, 42, 10, 10),
+    (38, 18, 8,  8),
+    (38, 34, 8,  8),
+    (52, 28, 4,  4),  # accent (cyan in UI; tinted in menubar)
 )
 _BRAND_VIEWBOX_W = 60.0
 _BRAND_VIEWBOX_H = 60.0

@@ -1,0 +1,23 @@
+{#
+  Dictate brand mark — 5-column scattered cluster whose collective silhouette
+  forms a near-square oval. Tiny tips at both ends, large middle column.
+  One cyan particle as the right-most tip.
+  Single source of truth: keep dictate/webui/static/dictate-mark.svg and
+  dictate.icons._BRAND_SHAPES in sync with the geometry below.
+#}
+{% macro brand_mark(size=28, css_class="brand-mark") -%}
+<svg class="{{ css_class }}" viewBox="0 0 60 60" width="{{ size }}" height="{{ size }}"
+     aria-hidden="true" focusable="false">
+  <g fill="currentColor">
+    <rect x="0"  y="28" width="4"  height="4"  rx="1"/>
+    <rect x="8"  y="18" width="8"  height="8"  rx="1.5"/>
+    <rect x="8"  y="34" width="8"  height="8"  rx="1.5"/>
+    <rect x="22" y="8"  width="10" height="10" rx="2"/>
+    <rect x="22" y="25" width="10" height="10" rx="2"/>
+    <rect x="22" y="42" width="10" height="10" rx="2"/>
+    <rect x="38" y="18" width="8"  height="8"  rx="1.5"/>
+    <rect x="38" y="34" width="8"  height="8"  rx="1.5"/>
+  </g>
+  <rect x="52" y="28" width="4" height="4" rx="1" fill="#06B6D4"/>
+</svg>
+{%- endmacro %}

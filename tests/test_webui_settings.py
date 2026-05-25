@@ -23,7 +23,9 @@ def cfg(tmp_path: Path) -> Config:
 
 @pytest.fixture
 def client(cfg: Config) -> TestClient:
-    return TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    tc.headers.update({"X-Dictate-WebUI": "1"})
+    return tc
 
 
 def test_settings_returns_html_and_resolved_path(client: TestClient, cfg: Config) -> None:

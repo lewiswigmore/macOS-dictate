@@ -64,7 +64,7 @@ function rowHtml(entry) {
 
 async function removeEntry(id) {
   if (!confirm("Delete this transcript?")) return;
-  await fetch(`/api/transcripts/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await fetch(`/api/transcripts/${encodeURIComponent(id)}`, { method: "DELETE", headers: { "X-Dictate-WebUI": "1" } });
   if ($("transcripts")) await loadList();
   if ($("detail")) location.href = "/";
 }
@@ -137,7 +137,7 @@ function wireList() {
       const days = Number($("purge-days").value);
       if (!days || days < 1) return;
       if (!confirm(`Delete all transcripts older than ${days} days?`)) return;
-      const res = await fetch("/api/purge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ older_than_days: days }) });
+      const res = await fetch("/api/purge", { method: "POST", headers: { "Content-Type": "application/json", "X-Dictate-WebUI": "1" }, body: JSON.stringify({ older_than_days: days }) });
       const data = await res.json();
       const summary = $("purge-form").querySelector(".purge-result") || document.createElement("span");
       summary.className = "purge-result muted";
@@ -313,19 +313,68 @@ function diffHtml(a, b) {
   return `<h2>Line diff</h2><div class="diff"><pre>${rows.join("\n")}</pre></div>`;
 }
 
+const BACKEND_LABELS = {
+  ollama: "Ollama (local)",
+  openrouter: "OpenRouter",
+  openai: "OpenAI",
+  raw: "Raw passthrough",
+  skipped: "No-op (clean as-is)",
+  unknown: "Unknown",
+};
+
+function relabel(map, labels) {
+  const out = {};
+  for (const [k, v] of Object.entries(map || {})) {
+    out[labels[k] || k] = (out[labels[k] || k] || 0) + v;
+  }
+  return out;
+}
+
+function fmtMs(v) { return v == null ? "—" : `${Math.round(v)} ms`; }
+
 async function loadStats() {
   if (!$("stats-cards")) return;
   const stats = await (await fetch("/api/stats")).json();
+  const localPct = Math.round((stats.local_ratio ?? 1) * 100);
   $("stats-cards").innerHTML = [
-    ["Total utterances", stats.total],
-    ["Characters dictated", stats.total_chars],
-    ["Avg latency", stats.avg_latency_ms == null ? "—" : `${Math.round(stats.avg_latency_ms)} ms`],
-    ["Fallback rate", `${Math.round(stats.fallback_rate * 100)}%`]
-  ].map(([label, value]) => `<div class="card">${label}<strong>${esc(value)}</strong></div>`).join("");
-  drawBar("day-chart", formatDayKeys(stats.by_day), "Utterances");
+    ["Total utterances", (stats.total ?? 0).toLocaleString(), `${(stats.total_chars ?? 0).toLocaleString()} chars dictated`],
+    ["Avg length", `${Math.round(stats.avg_chars ?? 0)} chars`, "per utterance"],
+    ["Median latency", fmtMs(stats.p50_latency_ms ?? stats.avg_latency_ms), `p95 ${fmtMs(stats.p95_latency_ms)}`],
+    ["100% local", `${localPct}%`, "of utterances stayed on-device"],
+    ["Fallback rate", `${Math.round((stats.fallback_rate ?? 0) * 100)}%`, "cleanup → raw"],
+  ].map(([label, value, sub]) => `<div class="card">${esc(label)}<strong>${esc(value)}</strong><span class="card-sub muted">${esc(sub)}</span></div>`).join("");
+  drawBar("day-chart", formatDayKeys(stats.by_day), "Utterances", { highlightLast: true });
+  renderDayAxis("day-chart-axis", stats.by_day || {});
+  const hourMap = {};
+  for (let h = 0; h < 24; h++) hourMap[String(h).padStart(2, "0")] = (stats.by_hour || {})[h] ?? (stats.by_hour || {})[String(h)] ?? 0;
+  drawBar("hour-chart", hourMap, "Utterances");
+  renderHourAxis("hour-chart-axis");
   drawPie("preset-chart", stats.by_preset);
-  drawPie("backend-chart", stats.by_backend);
+  drawPie("backend-chart", relabel(stats.by_backend, BACKEND_LABELS));
+  const foot = $("backend-foot");
+  if (foot) foot.textContent = "“No-op” means the dictation was clean enough that no cleanup model was needed. “Raw” means cleanup was attempted but the result was rejected (kept the original).";
   drawBar("app-chart", stats.by_app, "Utterances");
+}
+
+function renderDayAxis(id, byDay) {
+  const el = $(id);
+  if (!el) return;
+  const keys = Object.keys(byDay || {});
+  if (!keys.length) { el.innerHTML = ""; return; }
+  const ticks = [0, Math.floor(keys.length / 2), keys.length - 1];
+  const labels = ticks.map((i) => {
+    const k = keys[i];
+    if (!k) return "";
+    const d = new Date(k);
+    return isNaN(d.getTime()) ? k : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  });
+  el.innerHTML = labels.map((l) => `<span>${esc(l)}</span>`).join("");
+}
+
+function renderHourAxis(id) {
+  const el = $(id);
+  if (!el) return;
+  el.innerHTML = ["00", "06", "12", "18", "23"].map((l) => `<span>${l}</span>`).join("");
 }
 
 function chartColors(n) {
@@ -382,7 +431,7 @@ function formatDayKeys(byDay) {
   return out;
 }
 
-function drawBar(id, data, label) {
+function drawBar(id, data, label, opts = {}) {
   const canvas = $(id);
   if (!canvas) return;
   const { ctx, w, h } = setupCanvas(canvas);
@@ -394,9 +443,10 @@ function drawBar(id, data, label) {
   const padL = 40, padR = 12, padT = 12, padB = 36;
   const plotW = w - padL - padR;
   const plotH = h - padT - padB;
-  const colors = chartColors(entries.length);
+  const accent = (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#06B6D4").trim();
+  const singleColor = opts.singleColor !== false && entries.length > 8;
+  const colors = singleColor ? entries.map(() => accent) : chartColors(entries.length);
 
-  // y-axis baseline + max label
   ctx.strokeStyle = theme.muted;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -420,9 +470,13 @@ function drawBar(id, data, label) {
     const x = padL + i * (barW + barGap);
     const y = padT + plotH - barH;
     ctx.fillStyle = colors[i];
-    ctx.fillRect(x, y, barW, barH);
+    if (singleColor) {
+      const isLast = opts.highlightLast && i === entries.length - 1;
+      ctx.globalAlpha = v === 0 ? 0.25 : (isLast ? 1.0 : 0.7);
+    }
+    ctx.fillRect(x, y, barW, Math.max(barH, v > 0 ? 2 : 0));
+    ctx.globalAlpha = 1.0;
 
-    // x label: only render if it'll fit; rotate for dense bars
     if (entries.length <= 14) {
       ctx.fillStyle = theme.muted;
       ctx.textAlign = "center";
@@ -432,7 +486,6 @@ function drawBar(id, data, label) {
     }
   });
 
-  // axis title
   ctx.fillStyle = theme.muted;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -449,7 +502,7 @@ function drawPie(id, data) {
   const total = entries.reduce((acc, [, v]) => acc + Number(v), 0);
   if (total === 0) { drawEmpty(ctx, w, h, theme); return; }
 
-  const legendW = 120;
+  const legendW = 170;
   const cx = (w - legendW) / 2 + 8;
   const cy = h / 2;
   const radius = Math.min(w - legendW, h) / 2 - 12;
@@ -486,7 +539,7 @@ function drawPie(id, data) {
     ctx.fillStyle = colors[i];
     ctx.fillRect(legendX, y - 6, 10, 12);
     ctx.fillStyle = theme.fg;
-    const label = String(key).length > 12 ? String(key).slice(0, 11) + "…" : String(key);
+    const label = String(key).length > 18 ? String(key).slice(0, 17) + "…" : String(key);
     const pct = Math.round((Number(v) / total) * 100);
     ctx.fillText(`${label} · ${pct}%`, legendX + 16, y);
   });
@@ -497,4 +550,200 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
-document.addEventListener("DOMContentLoaded", () => { wireShortcuts(); wireList(); loadDetail(); loadStats(); });
+document.addEventListener("DOMContentLoaded", () => { wireShortcuts(); wireList(); loadDetail(); loadStats(); loadDashboard(); });
+
+async function loadDashboard() {
+  const recentList = $("recent-list");
+  const healthList = $("health-list");
+  if (!recentList && !healthList) return;
+  let data;
+  try {
+    const res = await fetch("/api/dashboard");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+  } catch (err) {
+    if (recentList) recentList.innerHTML = `<li class="muted recent-empty">Could not load dashboard: ${esc(err.message)}</li>`;
+    return;
+  }
+  renderDashboardKpis(data);
+  renderRecent(data.recent || []);
+  renderHealth(data.health || {});
+  renderSuggestions(data.suggestions || []);
+}
+
+function renderDashboardKpis(data) {
+  const today = data.today || {};
+  const totals = data.totals || {};
+  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+  setText("kpi-today-count", today.count ?? 0);
+  setText("kpi-today-chars", (today.chars ?? 0).toLocaleString());
+  setText("kpi-today-words", today.chars ? `≈ ${Math.round(today.chars / 5).toLocaleString()} words` : "no characters yet");
+  setText("kpi-today-latency", today.avg_latency_ms == null ? "—" : `${Math.round(today.avg_latency_ms)} ms`);
+  setText("kpi-total", (totals.entries ?? 0).toLocaleString());
+  setText("kpi-last-updated", totals.last_updated ? `last entry ${fmtTs(totals.last_updated)}` : "no entries yet");
+  const rate = $("kpi-today-rate");
+  if (rate) {
+    if ((today.count ?? 0) === 0) rate.textContent = "no dictations yet today";
+    else if ((today.fallback_rate ?? 0) > 0) rate.textContent = `${Math.round(today.fallback_rate * 100)}% used fallback`;
+    else rate.textContent = "all clean ✓";
+  }
+  setText("hero-hotkey", data.hotkey || "⌘H");
+  drawSparkline("kpi-sparkline", data.sparkline_7d || []);
+}
+
+function drawSparkline(id, points) {
+  const canvas = $(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.width || 120;
+  const cssH = canvas.height || 36;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssW, cssH);
+  const theme = chartTheme();
+  const counts = points.map((p) => Number(p.count) || 0);
+  const max = Math.max(1, ...counts);
+  if (counts.length === 0) return;
+  const padX = 2, padY = 4;
+  const barW = Math.max(2, (cssW - padX * 2 - (counts.length - 1) * 2) / counts.length);
+  const accent = (getComputedStyle(document.documentElement).getPropertyValue("--accent") || "#06B6D4").trim();
+  counts.forEach((v, i) => {
+    const h = Math.max(2, (v / max) * (cssH - padY * 2));
+    const x = padX + i * (barW + 2);
+    const y = cssH - padY - h;
+    ctx.fillStyle = v === 0 ? theme.muted : accent;
+    ctx.globalAlpha = v === 0 ? 0.3 : (i === counts.length - 1 ? 1.0 : 0.65);
+    roundRect(ctx, x, y, barW, h, 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1.0;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function renderSuggestions(items) {
+  const panel = $("suggestions-panel");
+  const list = $("suggestions-list");
+  if (!panel || !list) return;
+  if (!items || items.length === 0) { panel.hidden = true; return; }
+  panel.hidden = false;
+  list.innerHTML = items.map((s) => `
+    <li class="suggestion suggestion-${esc(s.kind || "info")}">
+      <div class="suggestion-body">
+        <strong>${esc(s.title)}</strong>
+        <span class="muted small">${esc(s.detail)}</span>
+      </div>
+      ${s.action_label ? `<a class="suggestion-action" href="${esc(s.action_href || "#")}">${esc(s.action_label)}</a>` : ""}
+    </li>
+  `).join("");
+}
+
+function relativeDayLabel(ts) {
+  if (!ts) return "Earlier";
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return "Earlier";
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.floor((startToday - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
+  return "Earlier";
+}
+
+function fmtTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderRecent(items) {
+  const list = $("recent-list");
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = `<li class="muted recent-empty">No dictations yet. Hold your hotkey to start.</li>`;
+    return;
+  }
+  let lastGroup = null;
+  const rows = [];
+  for (const entry of items) {
+    const group = relativeDayLabel(entry.ts);
+    if (group !== lastGroup) {
+      rows.push(`<li class="recent-group">${esc(group)}</li>`);
+      lastGroup = group;
+    }
+    const text = truncate(entry.cleaned || entry.raw || "", 90);
+    const time = fmtTime(entry.ts);
+    const app = entryApp(entry);
+    const lat = latency(entry);
+    const preset = entry.preset || "default";
+    const url = `/entry/${encodeURIComponent(entry.id)}`;
+    rows.push(`<li><a class="recent-item" href="${url}">
+      <span class="recent-time">${esc(time)}</span>
+      <span class="recent-text">${esc(text) || "<em>empty</em>"}</span>
+      <span class="recent-meta">
+        <span class="preset-badge preset-${esc(preset)}">${esc(preset)}</span>
+        ${app ? `<span class="recent-app">${esc(app)}</span>` : ""}
+        <span>${esc(lat)}</span>
+      </span>
+    </a></li>`);
+  }
+  list.innerHTML = rows.join("");
+}
+
+function renderHealth(health) {
+  const list = $("health-list");
+  if (!list) return;
+  const rows = [];
+  const backend = health.backend || {};
+  if (health.cleanup_enabled === false) {
+    rows.push(healthRow("ok", "Cleanup", "Disabled — raw + smart punctuation"));
+  } else {
+    const backendState = backend.ok ? "ok" : (backend.error ? "bad" : "warn");
+    const backendDetail = backend.ok
+      ? `${backend.host || backend.url || ""} · ${backend.latency_ms ?? "?"} ms`
+      : (backend.error || "unreachable");
+    rows.push(healthRow(backendState, `Backend · ${esc(health.active_backend || "—")}`, backendDetail));
+
+    const configured = health.configured_model;
+    const resolved = health.resolved_model;
+    if (configured || resolved) {
+      let state = "ok"; let detail = esc(configured || "");
+      if (resolved && configured && resolved !== configured) {
+        state = "warn";
+        detail = `${esc(configured)} → using ${esc(resolved)}`;
+      } else if (resolved) {
+        detail = esc(resolved);
+      }
+      rows.push(healthRow(state, "Cleanup model", detail));
+    }
+  }
+
+  const perms = Array.isArray(health.permissions) ? health.permissions : [];
+  for (const perm of perms) {
+    rows.push(healthRow(perm.granted ? "ok" : "bad", `Permission · ${esc(perm.label)}`, perm.granted ? "granted" : "not granted"));
+  }
+  list.innerHTML = rows.join("") || `<li class="muted">No health checks available.</li>`;
+}
+
+function healthRow(state, label, detail) {
+  return `<li class="health-row">
+    <span class="health-dot ${esc(state)}" aria-hidden="true"></span>
+    <span class="health-label">${label}</span>
+    <span class="health-detail" title="${esc(detail)}">${esc(detail)}</span>
+  </li>`;
+}
