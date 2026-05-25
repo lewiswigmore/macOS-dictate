@@ -1,0 +1,145 @@
+/* dictate docs — brand tokens lifted from the WebUI app.css so the
+   product site and the marketing/docs site feel like the same surface. */
+
+:root {
+  /* WebUI tokens */
+  --dictate-bg:      #ffffff;
+  --dictate-fg:      #1a1a1a;
+  --dictate-muted:   #666666;
+  --dictate-accent:  #2563eb;
+  --dictate-card:    #f8f9fa;
+  --dictate-border:  #e5e7eb;
+  --dictate-cyan:    #06b6d4;
+
+  /* Material colour overrides */
+  --md-primary-fg-color:        var(--dictate-accent);
+  --md-primary-fg-color--light: #3b82f6;
+  --md-primary-fg-color--dark:  #1d4ed8;
+  --md-accent-fg-color:         var(--dictate-cyan);
+  --md-default-bg-color:        var(--dictate-bg);
+  --md-default-fg-color:        var(--dictate-fg);
+  --md-default-fg-color--light: var(--dictate-muted);
+  --md-typeset-a-color:         var(--dictate-accent);
+
+  --md-code-bg-color:           var(--dictate-card);
+}
+
+[data-md-color-scheme="slate"] {
+  --dictate-bg:     #0d1117;
+  --dictate-fg:     #e6edf3;
+  --dictate-muted:  #8b949e;
+  --dictate-accent: #58a6ff;
+  --dictate-card:   #161b22;
+  --dictate-border: #30363d;
+
+  --md-primary-fg-color:        var(--dictate-accent);
+  --md-primary-fg-color--light: #79b8ff;
+  --md-primary-fg-color--dark:  #1f6feb;
+  --md-accent-fg-color:         var(--dictate-cyan);
+  --md-default-bg-color:        var(--dictate-bg);
+  --md-default-fg-color:        var(--dictate-fg);
+  --md-default-fg-color--light: var(--dictate-muted);
+  --md-typeset-a-color:         var(--dictate-accent);
+  --md-code-bg-color:           var(--dictate-card);
+}
+
+/* Headings: match WebUI tight letter-spacing on h1 */
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.md-typeset h2,
+.md-typeset h3 { letter-spacing: -0.01em; }
+
+/* Top header — flatter, like the WebUI .site-header */
+.md-header {
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  border-bottom: 1px solid var(--dictate-border);
+  box-shadow: none;
+}
+.md-header__title { font-weight: 700; }
+.md-tabs {
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  border-bottom: 1px solid var(--dictate-border);
+}
+.md-tabs__link { opacity: 0.85; }
+.md-tabs__link--active { opacity: 1; }
+
+/* Buttons & links — WebUI pill chip aesthetic */
+.md-typeset a { text-decoration: none; }
+.md-typeset a:hover { text-decoration: underline; }
+
+/* Cards / admonitions — soft surface, no harsh borders */
+.md-typeset .admonition,
+.md-typeset details {
+  background: var(--dictate-card);
+  border: 1px solid var(--dictate-border);
+  border-left: 3px solid var(--dictate-accent);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.md-typeset .admonition-title,
+.md-typeset summary {
+  background: transparent;
+  border: none;
+  font-weight: 600;
+}
+
+/* Code blocks — match WebUI card surface */
+.md-typeset pre > code,
+.md-typeset .highlight pre {
+  background: var(--dictate-card);
+  border: 1px solid var(--dictate-border);
+  border-radius: 8px;
+}
+.md-typeset code {
+  background: var(--dictate-card);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* Tables — WebUI history-table look */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--dictate-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.md-typeset table:not([class]) th {
+  background: var(--dictate-card);
+  color: var(--dictate-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Hero "chip row" used on the docs home page */
+.dictate-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 24px;
+}
+.dictate-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dictate-card);
+  border: 1px solid var(--dictate-border);
+  color: var(--dictate-fg);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.dictate-chip strong {
+  color: var(--dictate-accent);
+  font-weight: 600;
+}
+
+/* Footer — subtle */
+.md-footer,
+.md-footer-meta { background: var(--dictate-card); color: var(--dictate-muted); }
+.md-footer-meta__inner { padding-top: 12px; padding-bottom: 12px; }
