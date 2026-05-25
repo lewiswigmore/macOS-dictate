@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="120" height="120" fill="none">
-  <g fill="#0B0F19">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="120" height="120">
+  <style>
+    .glyph { fill: #0B0F19; }
+    @media (prefers-color-scheme: dark) { .glyph { fill: #F8FAFC; } }
+  </style>
+  <g class="glyph">
     <rect x="0"  y="28" width="4"  height="4"  rx="1"/>
     <rect x="8"  y="18" width="8"  height="8"  rx="1.5"/>
     <rect x="8"  y="34" width="8"  height="8"  rx="1.5"/>
