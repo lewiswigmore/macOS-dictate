@@ -115,6 +115,15 @@
   text-transform: uppercase;
 }
 
+/* Hero wordmark above the H1 on the docs home page */
+.dictate-hero {
+  margin: 8px 0 4px;
+}
+.dictate-hero img {
+  max-width: 320px;
+  height: auto;
+}
+
 /* Hero "chip row" used on the docs home page */
 .dictate-chips {
   display: flex;

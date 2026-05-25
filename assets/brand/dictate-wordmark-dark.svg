@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" role="img" aria-label="dictate">
+  <title>dictate</title>
+  <g fill="#e6edf3">
+    <rect x="0"  y="38" width="5"  height="5"  rx="1.2"/>
+    <rect x="10" y="26" width="10" height="10" rx="2"/>
+    <rect x="10" y="46" width="10" height="10" rx="2"/>
+    <rect x="28" y="12" width="13" height="13" rx="2.5"/>
+    <rect x="28" y="33" width="13" height="13" rx="2.5"/>
+    <rect x="28" y="54" width="13" height="13" rx="2.5"/>
+    <rect x="48" y="26" width="10" height="10" rx="2"/>
+    <rect x="48" y="46" width="10" height="10" rx="2"/>
+  </g>
+  <rect x="65" y="38" width="5" height="5" rx="1.2" fill="#06B6D4"/>
+  <g transform="translate(94 56)">
+    <text fill="#e6edf3"
+          font-family="'New York','Iowan Old Style','Charter','Georgia','Times New Roman',serif"
+          font-size="46" font-style="italic" font-weight="500"
+          letter-spacing="-0.4"
+          text-rendering="geometricPrecision">d<tspan>ı</tspan>ctate</text>
+    <circle cx="42.5" cy="-29" r="3.6" fill="#06B6D4"/>
+  </g>
+</svg>

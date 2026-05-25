@@ -20,3 +20,4 @@ bench/results/*.json
 .env
 .dictate.env
 user_prefs.yaml
+site/

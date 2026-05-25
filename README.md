@@ -1,5 +1,8 @@
 <p align="left">
-  <img src="assets/brand/dictate-mark.svg" alt="dictate" width="96" height="96">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/dictate-wordmark-dark.svg">
+    <img src="assets/brand/dictate-wordmark-light.svg" alt="dictate" width="320" height="80">
+  </picture>
 </p>
 
 # dictate

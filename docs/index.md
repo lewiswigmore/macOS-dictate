@@ -1,3 +1,10 @@
+<p class="dictate-hero" markdown>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/dictate-wordmark-dark.svg">
+    <img src="assets/dictate-wordmark-light.svg" alt="dictate" width="320" height="80">
+  </picture>
+</p>
+
 # dictate
 
 > Privacy-first macOS voice dictation. Local Whisper on-device, with optional
