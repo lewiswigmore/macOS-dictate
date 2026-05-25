@@ -115,13 +115,10 @@
   text-transform: uppercase;
 }
 
-/* Hero wordmark above the H1 on the docs home page */
-.dictate-hero {
-  margin: 8px 0 4px;
-}
-.dictate-hero img {
-  max-width: 320px;
-  height: auto;
+/* Theme-aware logo swap: navy mark on light palette, ice mark on slate. */
+[data-md-color-scheme="slate"] .md-header__button.md-logo img,
+[data-md-color-scheme="slate"] .md-nav__button.md-logo img {
+  content: url("dictate-mark-dark.svg");
 }
 
 /* Hero "chip row" used on the docs home page */
