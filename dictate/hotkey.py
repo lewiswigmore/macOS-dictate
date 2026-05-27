@@ -225,6 +225,13 @@ class HotkeyState:
             if keycode != self._key_keycode:
                 return False
 
+            # Only act on (and possibly swallow) the keyup if we previously
+            # accepted the matching combo keydown. Otherwise a plain keypress
+            # of the trigger key (e.g. typing "h" with no Cmd) would have its
+            # keyup swallowed, leaving the OS thinking the key is stuck.
+            if not self._h_pressed:
+                return False
+
             self._h_pressed = False
             swallow = self._swallow_combo and not self._pause_override
 

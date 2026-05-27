@@ -379,3 +379,43 @@ class TestHoldOnlyMode:
         assert on_start.call_count == 0
         assert on_stop.call_count == 0
         assert not state.is_recording
+
+
+class TestPlainKeyPassthrough:
+    """Plain trigger-key presses (no modifier) must not be swallowed.
+
+    Regression: handle_key_up previously matched only on keycode, so typing
+    a plain "h" character had its keyup swallowed, leaving the OS thinking
+    H was stuck held.
+    """
+
+    def test_plain_key_down_not_swallowed(self) -> None:
+        state, on_start, on_stop, on_cancel, _ = _make_state()
+        swallow = state.handle_key_down(H_KEYCODE, NO_FLAGS, auto_repeat=False)
+        assert swallow is False
+        assert on_start.call_count == 0
+
+    def test_plain_key_up_not_swallowed(self) -> None:
+        state, on_start, on_stop, on_cancel, _ = _make_state()
+        # No prior combo keydown was accepted, so the keyup must pass through
+        # even though the keycode matches the trigger key.
+        swallow = state.handle_key_up(H_KEYCODE, NO_FLAGS)
+        assert swallow is False
+        assert on_stop.call_count == 0
+        assert on_cancel.call_count == 0
+
+    def test_plain_key_up_after_real_combo_still_passes_through(self) -> None:
+        # Full combo press/release, then a plain "h" tap immediately after.
+        state, on_start, on_stop, on_cancel, timers = _make_state()
+        state.handle_key_down(H_KEYCODE, CMD_FLAG, auto_repeat=False)
+        state.handle_key_up(H_KEYCODE, CMD_FLAG)
+        timers.fire_latest()  # tap window fires → toggle on
+        assert state.is_recording
+        on_start.reset_mock()
+
+        # Plain "h" typed while recording must not be swallowed and must not
+        # affect the recording state.
+        assert state.handle_key_down(H_KEYCODE, NO_FLAGS, auto_repeat=False) is False
+        assert state.handle_key_up(H_KEYCODE, NO_FLAGS) is False
+        assert state.is_recording
+        assert on_stop.call_count == 0
