@@ -1,10 +1,10 @@
 # Building dictate.app
 
-This guide explains how to build dictate as a proper macOS .app bundle, sign it and notarize it for distribution.
+dictate is designed to be run from source. This guide is for power users who want their own `.app` bundle for personal use; signed-and-notarised public distribution is intentionally out of scope (see the [FAQ](faq.md)).
 
 ## Quick build (development, unsigned)
 
-For local testing without signing:
+For local use without signing:
 
 ```bash
 pip install py2app
@@ -15,10 +15,9 @@ open dist/dictate.app
 Alias mode is much faster and symlinks back to your source, useful while iterating.
 For a real bundle that's portable to other machines, drop `--alias`.
 
-The unsigned .app will show a Gatekeeper warning on first launch on other machines.
-Users can right-click → Open to bypass it, but for public distribution you'll want it signed and notarized.
+The unsigned .app will show a Gatekeeper warning on first launch. Right-click → Open to bypass it. This is fine for personal use; if you want a signed bundle for your own machine, see the optional section below.
 
-## Production build (signed + notarized)
+## Optional: signing your own bundle
 
 ### One-time setup
 
@@ -74,5 +73,4 @@ spctl -a -vvv -t install dist/dictate.app
 
 ## Roadmap
 
-- v0.1 (current): manual build via this guide, unsigned for development.
-- v0.4: CI workflow that produces a signed + notarized DMG on every tagged release.
+dictate stays self-hosted by design. There is no plan to ship a signed DMG, Homebrew cask, or App Store listing. This guide is the supported path.
