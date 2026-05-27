@@ -5,11 +5,9 @@
 > no account, no required network calls.
 
 <div class="dictate-chips" markdown>
-  <span class="dictate-chip"><strong>Local-by-default</strong>: audio never leaves your Mac</span>
-  <span class="dictate-chip">Hotkey driven, hold, tap, double-tap</span>
-  <span class="dictate-chip">Ollama or OpenRouter for optional cleanup</span>
-  <span class="dictate-chip">WebUI dashboard, stats, history, search</span>
+  <span class="dictate-chip"><strong>Local-by-default</strong></span>
   <span class="dictate-chip">MIT licensed</span>
+  <span class="dictate-chip">No telemetry</span>
 </div>
 
 !!! info "Status"
