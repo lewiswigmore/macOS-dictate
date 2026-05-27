@@ -65,8 +65,8 @@ for the macOS perms you'll grant (Accessibility, Microphone, Input Monitoring) a
 - **Not a meeting transcriber.** Built for short, hotkey-triggered insertion.
 - **Not a replacement for Apple's Dictation** if basic speech-to-text is
   enough and you trust their servers.
-- **Not yet a packaged consumer app.** Source install only; `.app`, signed
-  DMG, and Homebrew distribution are on the [Roadmap](roadmap.md).
+- **Not a marketplace app.** dictate is self-hosted by design. Clone, install,
+  run. If you want a packaged `.app` for personal use, see [Build .app](build-app.md).
 
 ## Architecture at a glance
 

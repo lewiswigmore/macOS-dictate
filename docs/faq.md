@@ -38,7 +38,7 @@ Remove `history.jsonl` from the repo directory, or use the WebUI delete button v
 
 ## Why isn't there an app icon / DMG / Homebrew tap?
 
-They are on the roadmap for v0.4. v0.1 is a clean OSS release; distribution polish comes next.
+By design. dictate is a self-hosted tool, not a marketplace product. You clone the repo, run `install.sh`, and you own the install. If you want a `.app` bundle for your own use, the [Build .app](build-app.md) guide walks through it; signed and notarised distribution is intentionally out of scope.
 
 ## Can I contribute?
 
