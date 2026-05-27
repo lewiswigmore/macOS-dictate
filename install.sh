@@ -38,7 +38,7 @@ fi
 source .venv/bin/activate
 
 echo "==> Installing Python deps"
-python -m pip install --upgrade pip
+python -m pip install 'pip==25.0.1'
 python -m pip install -r requirements-dev.txt
 
 # --- Ollama (default cleanup backend) ---
