@@ -21,15 +21,31 @@ snake_case
 
 ## Replacements
 
-`config/vocab/replacements.txt` runs after ASR and before cleanup. Use it for deterministic fixes that should always happen.
+Two formats are supported. The legacy plain-text file `config/vocab/replacements.txt` keeps working for simple `from -> to` pairs:
 
 ```text
-from -> to
 open ai -> OpenAI
 vs code -> VS Code
 ```
 
-Keep replacements small and obvious. Prefer vocab entries when you only need recognition bias.
+The YAML format at `config/vocab/replacements.yaml` unlocks regex rules and case-sensitive matching:
+
+```yaml
+- pattern: kubernetic
+  replacement: Kubernetes
+
+- pattern: "next ?js"
+  replacement: Next.js
+  regex: true
+
+- pattern: API
+  replacement: API
+  case_sensitive: true
+```
+
+Both files are merged on load, with later layers winning. Drop a `config/vocab/<preset>.replacements.yaml` next to the global file to add per-preset overrides (e.g. `code.replacements.yaml` applies only when the `code` vocab preset is active).
+
+Replacements run after ASR and before LLM cleanup, so the cleanup pass sees corrected text. Literal patterns match whole words, longest-first. Keep rules small and obvious; prefer vocab entries when you only need recognition bias.
 
 ## Project vocab
 

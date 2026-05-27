@@ -65,6 +65,45 @@
 </section>
 {% endif %}
 
+{% if replacements_summary %}
+<section class="panel" aria-labelledby="replacements-title">
+  <h2 id="replacements-title">Replacement dictionary</h2>
+  <p class="muted">
+    Deterministic text replacements applied after ASR and before LLM cleanup.
+    Edit the YAML files below and restart dictate to reload.
+  </p>
+  <ul class="settings-files">
+    {% for file in replacements_summary.files %}
+      <li>
+        <code>{{ file.path }}</code>
+        {% if file.exists %}
+          &mdash; {{ file.rule_count }} rule{{ '' if file.rule_count == 1 else 's' }}
+          {% if file.preset %}<span class="chip chip-preset">{{ file.preset }}</span>{% endif %}
+        {% else %}
+          &mdash; <span class="muted">not created</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% if replacements_summary.rules %}
+    <table class="kv-table" aria-label="Active replacement rules">
+      <thead><tr><th>Pattern</th><th>Replacement</th><th>Type</th></tr></thead>
+      <tbody>
+        {% for rule in replacements_summary.rules %}
+          <tr>
+            <td><code>{{ rule.pattern }}</code></td>
+            <td><code>{{ rule.replacement }}</code></td>
+            <td>{% if rule.regex %}regex{% else %}literal{% endif %}{% if rule.case_sensitive %} (cs){% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No replacement rules loaded yet.</p>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="panel" aria-labelledby="settings-yaml-title">
   <h2 id="settings-yaml-title">Current configuration</h2>
   <pre class="yaml-block" aria-label="Read-only redacted YAML configuration"><code>{{ settings_yaml_highlighted }}</code></pre>

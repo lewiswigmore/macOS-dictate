@@ -149,8 +149,13 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
                 settings_yaml_highlighted=_highlight_yaml(settings_yaml),
                 editable_prefs=_editable_pref_values(config),
                 prefs_path=str(config.prefs_path),
+                replacements_summary=_replacements_summary(config),
             ),
         )
+
+    @router.get("/api/replacements")
+    async def replacements_api() -> dict[str, Any]:
+        return _replacements_summary(config)
 
     @router.post("/api/settings/pref")
     async def update_pref(payload: PrefUpdate) -> dict[str, Any]:
@@ -400,6 +405,44 @@ def _editable_pref_values(config: Config) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+def _replacements_summary(config: Config) -> dict[str, Any]:
+    """Inspect the configured replacement files and return a compact summary
+    for the WebUI. Read-only; users edit the YAML and reload dictate."""
+    from dictate.replacements import load as load_replacements
+
+    root = config.root
+    candidates = [
+        root / "config" / "vocab" / "replacements.txt",
+        root / "config" / "vocab" / "replacements.yaml",
+    ]
+    preset_glob = sorted((root / "config" / "vocab").glob("*.replacements.yaml"))
+    files: list[dict[str, Any]] = []
+    rules_preview: list[dict[str, Any]] = []
+    for path in candidates + list(preset_glob):
+        exists = path.exists()
+        rules = load_replacements(path) if exists else []
+        files.append(
+            {
+                "path": str(path),
+                "exists": exists,
+                "rule_count": len(rules),
+                "preset": path.name.split(".", 1)[0] if path.name.endswith(".replacements.yaml") else None,
+            }
+        )
+        for rule in rules[:50]:
+            rules_preview.append(
+                {
+                    "pattern": rule.pattern,
+                    "replacement": rule.replacement,
+                    "regex": rule.regex,
+                    "case_sensitive": rule.case_sensitive,
+                    "source": rule.source,
+                }
+            )
+    return {"files": files, "rules": rules_preview, "total": len(rules_preview)}
+
 
 
 def _coerce_pref_value(kind: str, value: Any) -> Any:
