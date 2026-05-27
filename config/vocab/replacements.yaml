@@ -1,0 +1,28 @@
+# Replacement dictionary applied after ASR and before cleanup.
+#
+# Each entry is a mapping with:
+#   pattern:     the text to match (literal by default, regex when regex: true)
+#   replacement: the text to substitute in
+#   regex:       (optional, default false) treat pattern as a regular expression
+#   case_sensitive: (optional, default false) require exact case to match
+#
+# Literal matches respect word boundaries, so `git hub` will not match inside
+# `github`. Order does not matter; literal rules apply longest-first and regex
+# rules apply last.
+#
+# Per-preset overrides live alongside this file as e.g. `code.replacements.yaml`
+# and are merged on top of these global rules whenever the matching vocab
+# preset is active.
+
+# - pattern: "kubernetic"
+#   replacement: "Kubernetes"
+#
+# - pattern: "open ai"
+#   replacement: "OpenAI"
+#
+# - pattern: "vs code"
+#   replacement: "VS Code"
+#
+# - pattern: "(?i)\\bn(extjs| ?\\.? ?js)\\b"
+#   replacement: "Next.js"
+#   regex: true

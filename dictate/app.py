@@ -70,13 +70,13 @@ except ImportError:
 
 try:
     from dictate.replacements import apply as apply_replacements
-    from dictate.replacements import load as load_replacements
+    from dictate.replacements import load_layered as load_replacements_layered
 except ImportError:
 
     def apply_replacements(text: str, _replacements: object) -> str:
         return text
 
-    def load_replacements(_path: Path) -> list[object]:
+    def load_replacements_layered(*_paths: Path) -> list[object]:
         return []
 
 
@@ -125,7 +125,7 @@ class App:
 
         self.permissions = Permissions()
         self.redactor = Redactor(self.config.redact_patterns)
-        self.replacements = load_replacements(self._replacement_path())
+        self.replacements = load_replacements_layered(*self._replacement_paths())
         self.commands = CommandParser(self.config.commands)
         self.context = ContextProbe(self.config)
         self.recorder = MicRecorder()
@@ -204,6 +204,32 @@ class App:
         if configured.is_absolute():
             return configured
         return self.config.root / configured
+
+    def _replacement_paths(self) -> list[Path]:
+        """Return the ordered list of replacement files to merge.
+
+        Layers, lowest precedence first: legacy `.txt`, global `.yaml`,
+        then a per-preset YAML if it exists.
+        """
+        root = self.config.root
+        paths: list[Path] = []
+        legacy_txt = self._replacement_path()
+        if legacy_txt.exists():
+            paths.append(legacy_txt)
+        global_yaml = root / "config" / "vocab" / "replacements.yaml"
+        if global_yaml.exists():
+            paths.append(global_yaml)
+        return paths
+
+    def _preset_replacement_path(self, preset: str) -> Path:
+        return self.config.root / "config" / "vocab" / f"{preset}.replacements.yaml"
+
+    def _rules_for_preset(self, preset: str) -> list[object]:
+        """Merge global replacements with the active preset's override."""
+        preset_path = self._preset_replacement_path(preset)
+        if not preset_path.exists():
+            return list(self.replacements)
+        return load_replacements_layered(*self._replacement_paths(), preset_path)
 
     # ----------------------------------------------------------------- lifecycle
 
@@ -905,8 +931,9 @@ class App:
         ctx.metrics["preset"] = ctx.preset
         ctx.metrics["app_bundle"] = ctx.frontmost.get("bundle_id")
         ctx.raw = (result.get("text") or "").strip()
-        if self.replacements:
-            replaced = apply_replacements(ctx.raw, self.replacements)
+        active_rules = self._rules_for_preset(ctx.preset)
+        if active_rules:
+            replaced = apply_replacements(ctx.raw, active_rules)
             if replaced != ctx.raw:
                 ctx.metrics["replacements_applied"] = True
                 ctx.raw = replaced
