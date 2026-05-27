@@ -50,9 +50,9 @@ Architecture: arm64
 dictate version: 0.1.0
 
 Permissions
-✓ Accessibility: granted
-✓ Microphone: granted
-✓ Input Monitoring: granted
+ Accessibility: granted
+ Microphone: granted
+ Input Monitoring: granted
 ```
 
 ## `dictate --version`

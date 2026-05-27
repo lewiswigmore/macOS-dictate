@@ -7,31 +7,31 @@ After `git push -u origin main`, configure these on the GitHub web UI:
 - **Description:** Privacy-first macOS voice dictation. Local Whisper + Ollama, OpenRouter optional.
 - **Website:** (empty for now, or future docs site URL)
 - **Topics:** `macos`, `dictation`, `whisper`, `voice`, `privacy`, `local-first`, `accessibility`, `productivity`, `python`, `ollama`, `transcription`, `speech-to-text`
-- **Include in home page:** ✓ Releases  ✓ Packages  ✗ Deployments  ✗ Environments
+- **Include in home page:** Releases Packages Deployments Environments
 
 ## Features (Settings → General → Features)
 
-- ✓ Issues
-- ✓ Discussions (this enables the templates from `.github/DISCUSSION_TEMPLATE/`)
-- ✓ Projects (optional, use for the public roadmap)
-- ✗ Wikis (we use `docs/` instead)
-- ✗ Sponsorships (enable when funding ready, then uncomment `.github/FUNDING.yml`)
+- Issues
+- Discussions (this enables the templates from `.github/DISCUSSION_TEMPLATE/`)
+- Projects (optional, use for the public roadmap)
+- Wikis (we use `docs/` instead)
+- Sponsorships (enable when funding ready, then uncomment `.github/FUNDING.yml`)
 
 ## Security (Settings → Code security and analysis)
 
-- ✓ Private vulnerability reporting (drives `SECURITY.md` advisory flow)
-- ✓ Dependabot alerts
-- ✓ Dependabot security updates
-- ✓ Dependabot version updates (already configured via `.github/dependabot.yml`)
-- ✓ Secret scanning
-- ✓ Push protection for secrets
+- Private vulnerability reporting (drives `SECURITY.md` advisory flow)
+- Dependabot alerts
+- Dependabot security updates
+- Dependabot version updates (already configured via `.github/dependabot.yml`)
+- Secret scanning
+- Push protection for secrets
 
 ## Branch protection (Settings → Branches → Add rule for `main`)
 
-- ✓ Require pull request before merging (0 reviewers is OK for solo maintainer)
-- ✓ Require status checks to pass, select the CI workflow jobs
-- ✓ Require linear history
-- ✓ Require conversation resolution before merging
+- Require pull request before merging (0 reviewers is OK for solo maintainer)
+- Require status checks to pass, select the CI workflow jobs
+- Require linear history
+- Require conversation resolution before merging
 
 ## Initial labels (Settings → Labels, bulk update)
 
