@@ -4,7 +4,7 @@
 
 Please report suspected vulnerabilities **privately** through GitHub Security Advisories:
 
-➡️ **[Report a vulnerability](https://github.com/lewiswigmore/macOS-dictate/security/advisories/new)**
+ **[Report a vulnerability](https://github.com/lewiswigmore/macOS-dictate/security/advisories/new)**
 
 This routes the report directly to maintainers and is not publicly visible until coordinated disclosure. Do **not** open a regular GitHub issue for security reports.
 
