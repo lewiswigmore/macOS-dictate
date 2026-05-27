@@ -31,11 +31,10 @@ design. The URL scheme + AppleScript dictionary cover the same use cases.
 
 ## v0.4 — Polish
 
-- App icon + DMG packaging
-- Sparkle auto-updates
-- Homebrew tap
-- Sound + haptic feedback
+- Sparkle auto-updates for users who build their own `.app`
+- Sound and haptic feedback
 - Dark-mode HUD
+- Improved diagnostics in the WebUI dashboard
 
 ## Beyond
 

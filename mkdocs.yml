@@ -67,7 +67,6 @@ nav:
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Build .app: build-app.md
-      - Homebrew tap: homebrew-tap.md
       - Pre-launch checklist: pre-launch-checklist.md
       - GitHub setup: github-setup.md
   - Project:

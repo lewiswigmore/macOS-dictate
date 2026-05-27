@@ -45,8 +45,9 @@ cd ~/dictate
 ./run.sh
 ```
 
-No API keys are required. The Homebrew tap is tracked in
-[issue #12](https://github.com/lewiswigmore/macOS-dictate/issues/12).
+No API keys are required. dictate is designed as a self-hosted tool: clone,
+install, run. There is no marketplace listing, signed `.app`, or Homebrew
+cask, by design.
 
 First launch opens a wizard that walks through Accessibility, Microphone
 and Input Monitoring permissions, runs a mic test, checks backend
