@@ -125,8 +125,8 @@
 .dictate-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 24px;
+  gap: 10px 12px;
+  margin: 16px 0 28px;
 }
 .dictate-chip {
   display: inline-flex;
@@ -137,8 +137,9 @@
   color: var(--dictate-fg);
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
+  white-space: nowrap;
 }
 .dictate-chip strong {
   color: var(--dictate-accent);
