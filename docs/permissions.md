@@ -2,9 +2,6 @@
 
 dictate needs three macOS permissions to record audio and insert text into other apps.
 
-!!! note "Screenshot placeholders"
-    Add screenshots before v0.4 packaging: System Settings → Privacy & Security → Accessibility, Microphone, and Input Monitoring.
-
 ## Accessibility
 
 Accessibility lets dictate observe the focused app, read selected text when available, and send paste keystrokes.
