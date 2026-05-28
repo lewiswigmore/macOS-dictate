@@ -16,7 +16,7 @@ if [[ "$TAG" != v* ]]; then
   TAG="v${TAG}"
 fi
 
-URL="https://github.com/lewiswigmore/dictate/archive/refs/tags/${TAG}.tar.gz"
+URL="https://github.com/lewiswigmore/macOS-dictate/archive/refs/tags/${TAG}.tar.gz"
 
 echo "${URL}"
 curl -L "${URL}" | shasum -a 256

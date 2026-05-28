@@ -85,7 +85,7 @@ Next steps:
   git push origin main
   git push origin ${TAG}
   Create GitHub release from tag ${TAG}
-  curl -L https://github.com/lewiswigmore/dictate/archive/refs/tags/${TAG}.tar.gz | shasum -a 256
+  curl -L https://github.com/lewiswigmore/macOS-dictate/archive/refs/tags/${TAG}.tar.gz | shasum -a 256
   Update Formula/dictate.rb with the tarball SHA256
   Push Formula/dictate.rb to lewiswigmore/homebrew-dictate
 EOF

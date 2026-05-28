@@ -13,7 +13,7 @@ Control dictate from the Raycast launcher with five commands:
 For development:
 
 ```bash
-git clone https://github.com/lewiswigmore/dictate.git
+git clone https://github.com/lewiswigmore/macOS-dictate.git
 cd dictate/raycast
 npm install
 npm run dev
