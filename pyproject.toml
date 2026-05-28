@@ -51,9 +51,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lewiswigmore/dictate"
-Repository = "https://github.com/lewiswigmore/dictate"
-Issues = "https://github.com/lewiswigmore/dictate/issues"
+Homepage = "https://github.com/lewiswigmore/macOS-dictate"
+Repository = "https://github.com/lewiswigmore/macOS-dictate"
+Issues = "https://github.com/lewiswigmore/macOS-dictate/issues"
 
 [build-system]
 requires = ["hatchling"]

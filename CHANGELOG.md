@@ -52,5 +52,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pyproject.toml` with hatchling build backend and `[project.scripts]` for `dictate` and `dictate-web`.
 - `justfile`, `py.typed` (PEP 561), pre-commit config, CODEOWNERS, dependabot.
 
-[Unreleased]: https://github.com/lewiswigmore/dictate/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/lewiswigmore/dictate/releases/tag/v0.1.0
+[Unreleased]: https://github.com/lewiswigmore/macOS-dictate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/lewiswigmore/macOS-dictate/releases/tag/v0.1.0
