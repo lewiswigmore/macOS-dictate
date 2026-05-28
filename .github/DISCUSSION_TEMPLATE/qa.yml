@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before asking, please check the [FAQ](https://github.com/lewiswigmore/dictate/blob/main/FAQ.md) and existing Q&A discussions.
+        Before asking, please check the [FAQ](https://github.com/lewiswigmore/macOS-dictate/blob/main/FAQ.md) and existing Q&A discussions.
   - type: textarea
     id: question
     attributes:
