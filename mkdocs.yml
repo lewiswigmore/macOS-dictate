@@ -24,6 +24,9 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
   features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.prune
     - navigation.sections
     - navigation.indexes
     - navigation.top
@@ -55,15 +58,18 @@ nav:
       - Voice commands: voice-commands.md
       - Per-app vocab: vocab.md
       - Code dictation: code-dictation.md
+      - Recipes: recipes.md
       - WebUI: webui.md
       - CLI: cli.md
   - Automation:
       - URL scheme: url-scheme.md
       - Raycast: raycast.md
       - AppleScript: applescript.md
-  - Architecture:
-      - Pipeline: architecture.md
-      - Threading: architecture.md
+  - Architecture: architecture.md
+  - Privacy:
+      - Threat model: threat-model.md
+      - Third-party notices: third-party-notices.md
+  - Compare: compare.md
   - Operations:
       - Troubleshooting: troubleshooting.md
       - Build .app: build-app.md
@@ -73,8 +79,6 @@ nav:
       - Roadmap: roadmap.md
       - FAQ: faq.md
       - Changelog: changelog.md
-      - Threat model: threat-model.md
-      - Third-party notices: third-party-notices.md
 
 markdown_extensions:
   - admonition
