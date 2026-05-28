@@ -71,9 +71,7 @@ class CleanupClient:
         return ":11434" in base or "ollama" in base
 
     @staticmethod
-    def _pick_best_ollama_model(
-        installed: list[str], configured: str | None
-    ) -> str | None:
+    def _pick_best_ollama_model(installed: list[str], configured: str | None) -> str | None:
         if not installed:
             return None
         if configured and configured in installed:
@@ -139,9 +137,7 @@ class CleanupClient:
         names = [m.get("name") or m.get("model") for m in data.get("models", [])]
         return [n for n in names if n]
 
-    async def _resolve_ollama_model(
-        self, backend: Any, configured_model: str
-    ) -> str:
+    async def _resolve_ollama_model(self, backend: Any, configured_model: str) -> str:
         if not self._is_ollama_backend(backend):
             return configured_model
         cache_key = (backend.base_url, configured_model)
@@ -167,7 +163,10 @@ class CleanupClient:
             log.warning(
                 "cleanup model %r not installed in Ollama; using %r instead "
                 "(available: %s). Run `ollama pull %s` to use the configured model.",
-                configured_model, chosen, ", ".join(installed), configured_model,
+                configured_model,
+                chosen,
+                ", ".join(installed),
+                configured_model,
             )
         self._ollama_resolution[cache_key] = chosen
         return chosen or configured_model
@@ -204,7 +203,19 @@ class CleanupClient:
 
         if selection is not None:
             suffix_template = self._config.presets.get("selection_suffix", "")
-            system_text += suffix_template.replace("{selection}", selection)
+            # Selection comes from the AX API of whatever app is frontmost; any
+            # app the user has granted Accessibility to can put arbitrary text
+            # there, including text that tries to break out of the SELECTION
+            # block and inject new instructions. Fence it with a random nonce
+            # and strip closing tags from the selection itself.
+            sel_nonce = secrets.token_hex(4)
+            sel_open = f"<SELECTION_{sel_nonce}>"
+            sel_close = f"</SELECTION_{sel_nonce}>"
+            safe_selection = re.sub(
+                r"</SELECTION[A-Za-z0-9_]*>", "[/]", selection, flags=re.IGNORECASE
+            )
+            fenced_selection = f"{sel_open}\n{safe_selection}\n{sel_close}"
+            system_text += suffix_template.replace("{selection}", fenced_selection)
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system_text}]
 
@@ -421,12 +432,15 @@ class CleanupClient:
                     log.warning(
                         "cleanup output looks summarised (%d → %d chars); "
                         "falling back to raw transcript",
-                        len(source), len(text),
-                        extra={"extras": {
-                            "backend": backend_name,
-                            "raw_len": len(source),
-                            "cleaned_len": len(text),
-                        }},
+                        len(source),
+                        len(text),
+                        extra={
+                            "extras": {
+                                "backend": backend_name,
+                                "raw_len": len(source),
+                                "cleaned_len": len(text),
+                            }
+                        },
                     )
                     return source, {
                         **metrics,
