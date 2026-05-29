@@ -128,7 +128,7 @@ class CleanupClient:
             return []
         root = re.sub(r"/v\d+/?$", "", base_url).rstrip("/")
         try:
-            with httpx.Client(timeout=2.0) as client:
+            with httpx.Client(timeout=2.0, verify=True) as client:
                 resp = client.get(f"{root}/api/tags")
                 resp.raise_for_status()
                 data = resp.json()
@@ -148,7 +148,7 @@ class CleanupClient:
         root = re.sub(r"/v\d+/?$", "", backend.base_url).rstrip("/")
         tags_url = f"{root}/api/tags"
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
+            async with httpx.AsyncClient(timeout=2.0, verify=True) as client:
                 resp = await client.get(tags_url)
                 resp.raise_for_status()
                 data = resp.json()
@@ -314,7 +314,7 @@ class CleanupClient:
         url = backend.url("chat/completions")
         t0 = time.monotonic()
 
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, verify=True) as client:
             if stream:
                 text, _ = await self._stream_response(client, url, headers, payload)
                 tokens_in: int | None = None

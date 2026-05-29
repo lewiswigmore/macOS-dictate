@@ -39,7 +39,7 @@ def _download_model(dest: Path) -> Path:
         import httpx
 
         with (
-            httpx.Client(follow_redirects=True, timeout=120.0) as client,
+            httpx.Client(follow_redirects=True, timeout=120.0, verify=True) as client,
             client.stream("GET", MODEL_URL) as resp,
         ):
             resp.raise_for_status()
