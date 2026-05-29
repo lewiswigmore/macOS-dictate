@@ -30,7 +30,19 @@ class HealthMonitor:
         }
 
     def _ping(self, name: str) -> None:
-        backend = self._config.backend(name)
+        try:
+            backend = self._config.backend(name)
+        except ValueError as exc:
+            old_ok = self.status[name].get("ok", True)
+            self.status[name] = {
+                "ok": False,
+                "latency_ms": 0,
+                "last_check": time.time(),
+                "error": f"backend url rejected: {exc}",
+            }
+            if old_ok and self._on_change:
+                self._on_change(self.status)
+            return
 
         if not backend.has_api_key:
             old_ok = self.status[name].get("ok", True)

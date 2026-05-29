@@ -89,6 +89,11 @@ class BackendSpec:
     redact: bool
     health_path: str = "/models"
 
+    def __post_init__(self) -> None:
+        from dictate.safety import validate_backend_url
+
+        validate_backend_url(self.base_url)
+
     @property
     def api_key(self) -> str | None:
         if not self.api_key_env:
