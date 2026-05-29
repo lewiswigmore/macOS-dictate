@@ -52,7 +52,7 @@ async def test_ollama_circuit_opens_after_three_failures_and_closes_on_success(
     class FakeAsyncClient:
         calls = 0
 
-        def __init__(self, *, timeout: float) -> None:
+        def __init__(self, *, timeout: float, verify: bool = True) -> None:
             self.timeout = timeout
 
         async def __aenter__(self) -> FakeAsyncClient:

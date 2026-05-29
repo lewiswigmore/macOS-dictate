@@ -106,7 +106,8 @@
 
 <section class="panel" aria-labelledby="settings-yaml-title">
   <h2 id="settings-yaml-title">Current configuration</h2>
-  <pre class="yaml-block" aria-label="Read-only redacted YAML configuration"><code>{{ settings_yaml_highlighted }}</code></pre>
+  <pre class="yaml-block" aria-label="Read-only redacted YAML configuration"><code>{% for line in settings_yaml_lines %}{% for cls, text in line %}{% if cls %}<span class="{{ cls }}">{{ text }}</span>{% else %}{{ text }}{% endif %}{% endfor %}{% if not loop.last %}
+{% endif %}{% endfor %}</code></pre>
 </section>
 
 <script src="/static/settings.js" defer></script>

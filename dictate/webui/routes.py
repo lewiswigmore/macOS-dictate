@@ -10,7 +10,6 @@ import yaml
 from fastapi import APIRouter, Body, HTTPException, Query, Response, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
-from markupsafe import Markup, escape
 from pydantic import BaseModel, Field
 from starlette.requests import Request
 
@@ -33,7 +32,12 @@ PERMISSION_LABELS = {
 EDITABLE_PREFS: list[tuple[str, str, str, str]] = [
     ("webui.autostart", "bool", "Start WebUI with dictate", "WebUI"),
     ("webui.open_on_start", "bool", "Open browser on autostart", "WebUI"),
-    ("cleanup.enabled", "bool", "Enable LLM cleanup (off = use raw dictation + smart punctuation)", "Cleanup"),
+    (
+        "cleanup.enabled",
+        "bool",
+        "Enable LLM cleanup (off = use raw dictation + smart punctuation)",
+        "Cleanup",
+    ),
     ("cleanup.backend", "enum:ollama,openrouter", "Cleanup backend (when enabled)", "Cleanup"),
     ("cleanup.model", "string", "Cleanup model", "Cleanup"),
     ("cleanup.code_grammar.enabled", "bool", "Code grammar mode", "Cleanup"),
@@ -103,15 +107,11 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
         health = _dashboard_health(config)
         return {
             "today": store.today_summary(),
-            "recent": [
-                entry.model_dump(mode="json") for entry in store.recent(limit=8)
-            ],
+            "recent": [entry.model_dump(mode="json") for entry in store.recent(limit=8)],
             "health": health,
             "totals": {
                 "entries": store.count(),
-                "last_updated": store.last_updated().isoformat()
-                if store.last_updated()
-                else None,
+                "last_updated": store.last_updated().isoformat() if store.last_updated() else None,
             },
             "sparkline_7d": [{"day": d, "count": c} for d, c in last_7],
             "hotkey": _hotkey_label(config),
@@ -146,7 +146,7 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
                 load_error=load_error,
                 permissions=_permissions_status(),
                 settings_path=str(settings_path),
-                settings_yaml_highlighted=_highlight_yaml(settings_yaml),
+                settings_yaml_lines=_tokenize_yaml(settings_yaml),
                 editable_prefs=_editable_pref_values(config),
                 prefs_path=str(config.prefs_path),
                 replacements_summary=_replacements_summary(config),
@@ -260,7 +260,7 @@ def _dashboard_health(config: Config) -> dict[str, Any]:
         out["backend"]["url"] = url
         out["backend"]["host"] = host
         t0 = time.monotonic()
-        with httpx.Client(timeout=2.5) as client:
+        with httpx.Client(timeout=2.5, verify=True) as client:
             resp = client.get(url, headers=spec.auth_headers())
         out["backend"]["latency_ms"] = int((time.monotonic() - t0) * 1000)
         out["backend"]["ok"] = resp.is_success
@@ -306,38 +306,44 @@ def _dashboard_suggestions(
 
     backend = health.get("backend") or {}
     if not backend.get("ok"):
-        out.append({
-            "kind": "warn",
-            "title": "Cleanup backend unreachable",
-            "detail": backend.get("error") or "Backend did not respond.",
-            "action_label": "Open settings",
-            "action_href": "/settings",
-        })
+        out.append(
+            {
+                "kind": "warn",
+                "title": "Cleanup backend unreachable",
+                "detail": backend.get("error") or "Backend did not respond.",
+                "action_label": "Open settings",
+                "action_href": "/settings",
+            }
+        )
 
     perms = health.get("permissions") or []
     missing = [p for p in perms if isinstance(p, dict) and not p.get("granted")]
     if missing:
         labels = ", ".join(str(p.get("label")) for p in missing)
-        out.append({
-            "kind": "warn",
-            "title": "Missing macOS permissions",
-            "detail": f"Not granted yet: {labels}. Dictate needs these to record and paste.",
-            "action_label": "Grant in Settings",
-            "action_href": "/settings",
-        })
+        out.append(
+            {
+                "kind": "warn",
+                "title": "Missing macOS permissions",
+                "detail": f"Not granted yet: {labels}. Dictate needs these to record and paste.",
+                "action_label": "Grant in Settings",
+                "action_href": "/settings",
+            }
+        )
 
     purge_days = int(config.get("history.auto_purge_days", 0) or 0)
     if purge_days == 0 and stats.get("total", 0) > 50:
-        out.append({
-            "kind": "info",
-            "title": "Auto-purge is off",
-            "detail": (
-                "You have a growing history with no retention limit. "
-                "Set a purge window so old transcripts roll off automatically."
-            ),
-            "action_label": "Set retention",
-            "action_href": "/settings",
-        })
+        out.append(
+            {
+                "kind": "info",
+                "title": "Auto-purge is off",
+                "detail": (
+                    "You have a growing history with no retention limit. "
+                    "Set a purge window so old transcripts roll off automatically."
+                ),
+                "action_label": "Set retention",
+                "action_href": "/settings",
+            }
+        )
 
     return out[:3]
 
@@ -352,19 +358,23 @@ def _redact_secrets(value: Any, key: str | None = None) -> Any:
     return value
 
 
-def _highlight_yaml(yaml_text: str) -> Markup:
-    highlighted = []
+def _tokenize_yaml(yaml_text: str) -> list[list[tuple[str, str]]]:
+    lines: list[list[tuple[str, str]]] = []
     for line in yaml_text.splitlines():
         match = re.match(r"^(\s*)([^:\n][^:\n]*?)(:)(.*)$", line)
         if match and not match.group(2).lstrip().startswith("-"):
             indent, key, colon, rest = match.groups()
-            highlighted.append(
-                f'{escape(indent)}<span class="yaml-key">{escape(key)}</span>'
-                f'<span class="yaml-punctuation">{escape(colon)}</span>{escape(rest)}'
+            lines.append(
+                [
+                    ("", indent),
+                    ("yaml-key", key),
+                    ("yaml-punctuation", colon),
+                    ("", rest),
+                ]
             )
         else:
-            highlighted.append(str(escape(line)))
-    return Markup("\n".join(highlighted))  # nosec B704 - all interpolated values pass through escape()
+            lines.append([("", line)])
+    return lines
 
 
 def _permissions_status() -> list[dict[str, object]] | None:
@@ -428,7 +438,9 @@ def _replacements_summary(config: Config) -> dict[str, Any]:
                 "path": str(path),
                 "exists": exists,
                 "rule_count": len(rules),
-                "preset": path.name.split(".", 1)[0] if path.name.endswith(".replacements.yaml") else None,
+                "preset": path.name.split(".", 1)[0]
+                if path.name.endswith(".replacements.yaml")
+                else None,
             }
         )
         for rule in rules[:50]:
@@ -442,7 +454,6 @@ def _replacements_summary(config: Config) -> dict[str, Any]:
                 }
             )
     return {"files": files, "rules": rules_preview, "total": len(rules_preview)}
-
 
 
 def _coerce_pref_value(kind: str, value: Any) -> Any:

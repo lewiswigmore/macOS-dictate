@@ -60,7 +60,7 @@ class HealthMonitor:
         ok = False
         error: str | None = None
         try:
-            with httpx.Client(timeout=3.0) as client:
+            with httpx.Client(timeout=3.0, verify=True) as client:
                 resp = client.get(backend.health_url, headers=backend.auth_headers())
                 ok = resp.is_success
                 if not ok:
