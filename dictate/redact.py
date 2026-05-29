@@ -42,6 +42,9 @@ class Redactor:
             text = rx.sub(f"«REDACTED:{name}»", text)
         return text, list(stats.values())
 
+    def redact_pairs(self, pairs: list[tuple[str, str]]) -> list[tuple[str, str]]:
+        return [(self.redact(u)[0], self.redact(a)[0]) for u, a in pairs]
+
 
 def should_redact_for_backend(backend_spec: BackendSpec) -> bool:
     return backend_spec.redact

@@ -992,6 +992,13 @@ class App:
         ):
             n = int(self.config.get("cleanup.few_shot_count", 4))
             few_shot = self.learn.recent_corrections(ctx.preset, n)
+            if few_shot:
+                try:
+                    active_spec = self.config.active_backend
+                except KeyError:
+                    active_spec = None
+                if active_spec and active_spec.redact:
+                    few_shot = self.redactor.redact_pairs(few_shot)
 
         t0 = time.monotonic()
         cleaned, cln_metrics = self.cleanup.clean_sync(

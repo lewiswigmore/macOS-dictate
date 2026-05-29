@@ -66,3 +66,22 @@ def test_should_redact_for_backend() -> None:
     for backend_name in config.backends_raw:
         spec = config.backend(backend_name)
         assert should_redact_for_backend(spec) == spec.redact
+
+
+def test_redact_pairs_redacts_both_halves(redactor: Redactor) -> None:
+    pairs = [
+        ("my key is sk-abc123XXXXXXXXXXXXXXXXXXXXXXabc", "use sk-abc123XXXXXXXXXXXXXXXXXXXXXXabc"),
+        ("nothing sensitive here", "still clean"),
+    ]
+    out = redactor.redact_pairs(pairs)
+    assert len(out) == 2
+    assert "sk-" not in out[0][0]
+    assert "sk-" not in out[0][1]
+    assert "«REDACTED:openai_key»" in out[0][0]
+    assert "«REDACTED:openai_key»" in out[0][1]
+    assert out[1] == ("nothing sensitive here", "still clean")
+
+
+def test_redact_pairs_empty() -> None:
+    redactor = Redactor([])
+    assert redactor.redact_pairs([]) == []
