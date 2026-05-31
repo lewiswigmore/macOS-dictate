@@ -12,7 +12,7 @@ sell anything.
 | **Licence** | MIT, open source | Proprietary | Proprietary | Proprietary | Proprietary |
 | **Price** | Free | Free (bundled) | Free + paid tiers | Paid (subscription) | Paid (subscription) |
 | **Runs offline** | ✅ default | ⚠️ "Enhanced" only | ✅ | ✅ | ❌ cloud |
-| **Telemetry** | None | Apple analytics (opt-out) | None claimed | None claimed | Cloud by design |
+| **Telemetry** | None | Per Apple's privacy policy | None claimed | None claimed | Cloud by design |
 | **ASR engine** | Whisper (faster-whisper) | Apple SFSpeech | Whisper | Whisper + others | Proprietary |
 | **LLM cleanup** | Optional, local (Ollama) or BYO key (OpenRouter) | None | Optional, paid | Built-in | Built-in |
 | **Hotkey modes** | Hold / tap / double-tap | Tap (fn) | Configurable | Configurable | Configurable |
