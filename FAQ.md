@@ -28,7 +28,7 @@ Yes. The `code` preset includes developer vocabulary, and you can dictate replac
 
 ## Where's my data stored?
 
-Config lives in `~/.config/dictate/`, transcripts are stored in `<repo>/history.jsonl`, and model weights live under `~/.cache/huggingface/`. Nothing else is stored by dictate.
+Config lives in `~/.config/dictate/`, transcripts are stored by default at `~/dictate/history.jsonl` (configurable via `history.path` in `config/settings.yaml`), and model weights live under `~/.cache/huggingface/`. Nothing else is stored by dictate.
 
 ## How do I delete history?
 

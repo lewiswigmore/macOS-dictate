@@ -8,8 +8,9 @@ or send a PR to this page.
 
 The default config already does this. Hold your hotkey, talk, release.
 You get raw Whisper output plus rule-based punctuation, nothing leaves
-your machine. If you want a friendlier tone, enable cleanup but pick a
-small local model so latency stays under a second:
+your machine after the first-run model download. If you want a friendlier
+tone, enable cleanup but pick a small local model so latency stays under
+a second:
 
 ```yaml
 # config/cleanup.yaml
