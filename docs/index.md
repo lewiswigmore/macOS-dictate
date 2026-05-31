@@ -2,7 +2,7 @@
 
 > Privacy-first macOS voice dictation. Local Whisper on-device, with optional
 > LLM cleanup through **Ollama** (local) or **OpenRouter** (cloud). No telemetry,
-> no account, no required network calls.
+> no account, no network calls beyond first-run model downloads.
 
 <div class="dictate-chips" markdown>
   <span class="dictate-chip"><strong>Local-by-default</strong></span>
@@ -20,7 +20,8 @@
 
 - **Local by default.** On-device Whisper ASR. The default cleanup pipeline
   ships with the LLM **disabled**: you get raw transcription + smart
-  punctuation, no network calls. Flip the toggle in the WebUI any time.
+  punctuation, no network calls after the first-run model download. Flip
+  the toggle in the WebUI any time.
 - **Two opt-in backends.** When you want LLM cleanup, choose:
     - **Ollama**: runs entirely on your Mac. Auto-picks the best installed
       model (≥3B), falls back if your configured one isn't pulled.
