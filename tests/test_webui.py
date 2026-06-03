@@ -246,7 +246,7 @@ class TestPurgeApiValidation:
         resp = client.post("/api/purge", json={"older_than_days": -1})
         assert resp.status_code == 422
 
-    def test_one_day_only_deletes_older_entries(
+    def test_two_day_cutoff_only_deletes_older_entries(
         self, cfg: Config, history_path: Path
     ) -> None:
         from dictate.webui.store import HistoryStore
