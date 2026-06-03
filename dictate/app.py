@@ -957,6 +957,15 @@ class App:
             active_spec = None
         if active_spec and active_spec.redact:
             ctx.raw, ctx.redactions = self.redactor.redact(ctx.raw)
+            # Selection comes from AX of the frontmost app and is included
+            # verbatim in the cleanup system prompt (see CleanupClient
+            # `_build_messages`). Without this pass a secret visible on
+            # screen (an API key in code, a credential pasted into a chat
+            # buffer) would ride along to the cloud backend even though the
+            # user enabled redaction. Sibling to the few-shot fix (#52).
+            if ctx.selection:
+                ctx.selection, sel_hits = self.redactor.redact(ctx.selection)
+                ctx.redactions.extend(sel_hits)
         ctx.metrics["redactions"] = [r.get("name") for r in ctx.redactions]
 
     def _maybe_smart_punctuate(self, text: str) -> str:
