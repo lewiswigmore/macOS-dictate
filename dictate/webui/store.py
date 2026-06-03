@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import os
+import tempfile
 from datetime import UTC, datetime, timedelta
 from io import StringIO
 from pathlib import Path
@@ -404,17 +405,34 @@ class HistoryStore:
             raise PermissionError(
                 f"history path {self.path} is a symlink; refusing to write"
             )
-        tmp = self.path.with_name(f"{self.path.name}.tmp")
-        with tmp.open("w", encoding="utf-8") as f:
-            for row in rows:
-                f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
+        # tempfile.NamedTemporaryFile creates the file with 0o600 (process
+        # umask is ignored), so the rewritten history is owner-only from
+        # the moment the first byte hits disk. The previous Path.open("w")
+        # path went via the default umask (typically 0o022 on macOS) and
+        # briefly left the full transcript world-readable for the duration
+        # of the write — the same attacker class _HISTORY_FILE_MODE / the
+        # post-replace chmod were already defending the destination
+        # against.
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=str(self.path.parent),
+            prefix=self.path.name + ".",
+            suffix=".tmp",
+            delete=False,
+        )
+        tmp_path = tmp.name
         try:
-            os.chmod(tmp, _HISTORY_FILE_MODE, follow_symlinks=False)
-        except (OSError, NotImplementedError):
-            os.chmod(tmp, _HISTORY_FILE_MODE)
-        os.replace(tmp, self.path)
+            with tmp:
+                for row in rows:
+                    tmp.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(tmp_path, self.path)
+            tmp_path = None  # consumed by replace
+        finally:
+            if tmp_path is not None:
+                Path(tmp_path).unlink(missing_ok=True)
         try:
             os.chmod(self.path, _HISTORY_FILE_MODE, follow_symlinks=False)
         except (OSError, NotImplementedError):

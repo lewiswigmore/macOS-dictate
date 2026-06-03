@@ -272,3 +272,81 @@ class TestPurgeApiValidation:
         assert store.purge_older_than(0) == 0
         assert store.purge_older_than(-5) == 0
         assert store.count() == before
+
+
+def test_webui_store_tmp_file_is_0o600(tmp_path: Path, monkeypatch) -> None:
+    """The webui ``HistoryStore._write_rows_unlocked`` path used to open
+    its tmp file with ``Path.open("w")`` which honours the process umask
+    (typically 0o022 on macOS) and briefly produced a 0o644 sibling
+    containing the full history. Switching to ``tempfile.NamedTemporaryFile``
+    makes the tmp file 0o600 from creation. Verify by spying on the
+    tempfile call and recording the mode immediately after creation."""
+    import os as _os
+    import stat as _stat
+    import tempfile as _tempfile
+
+    from dictate.webui.store import HistoryStore
+
+    history_path = tmp_path / "history.jsonl"
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(history_path)}})
+    store = HistoryStore(cfg)
+
+    observed_modes: list[int] = []
+    real_ntf = _tempfile.NamedTemporaryFile
+
+    def spy(*args, **kwargs):
+        handle = real_ntf(*args, **kwargs)
+        observed_modes.append(_stat.S_IMODE(_os.stat(handle.name).st_mode))
+        return handle
+
+    monkeypatch.setattr("dictate.webui.store.tempfile.NamedTemporaryFile", spy)
+    store._write_rows_unlocked(
+        [{"ts": "2025-01-01T00:00:00Z", "raw": "secret-bearing line"}]
+    )
+
+    assert observed_modes, "expected NamedTemporaryFile to be called"
+    assert all(m == 0o600 for m in observed_modes), (
+        f"expected 0o600 from the moment of tmp creation, got "
+        f"{[oct(m) for m in observed_modes]}"
+    )
+    assert (history_path.stat().st_mode & 0o777) == 0o600
+    leftovers = [
+        p.name
+        for p in tmp_path.iterdir()
+        if p.name != history_path.name and p.name.endswith(".tmp")
+    ]
+    assert leftovers == [], f"expected no tmp leftovers, got {leftovers}"
+
+
+def test_webui_store_tmp_sibling_removed_on_write_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """If os.replace fails mid-rewrite, the tmp file must not be left on
+    disk. Without try/finally cleanup the failed rewrite would accumulate
+    0o600 tmp siblings containing the full transcript that the app would
+    never clean up on subsequent runs."""
+    from dictate.webui.store import HistoryStore
+
+    history_path = tmp_path / "history.jsonl"
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(history_path)}})
+    store = HistoryStore(cfg)
+
+    boom = OSError("simulated rename failure")
+    monkeypatch.setattr(
+        "dictate.webui.store.os.replace",
+        lambda *_a, **_k: (_ for _ in ()).throw(boom),
+    )
+
+    with pytest.raises(OSError, match="simulated rename failure"):
+        store._write_rows_unlocked(
+            [{"ts": "2025-01-01T00:00:00Z", "raw": "secret"}]
+        )
+
+    leftovers = [
+        p.name
+        for p in tmp_path.iterdir()
+        if p.name != history_path.name and p.name.endswith(".tmp")
+    ]
+    assert leftovers == [], (
+        f"expected tmp file to be cleaned up after rename error, got {leftovers}"
+    )
