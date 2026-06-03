@@ -63,7 +63,12 @@ class PrefUpdate(BaseModel):
 
 
 class PurgeRequest(BaseModel):
-    older_than_days: int = Field(ge=0, le=36500)
+    # ``older_than_days=0`` would mean "every entry with a parseable timestamp"
+    # — never the intended semantics. The CLI/auto-purge path in
+    # ``dictate.history.purge_older_than`` early-returns on ``days <= 0`` and
+    # the HTML form is bounded by ``min="1"``; align the API contract with
+    # both so a typo or intercepted request cannot wipe the whole history.
+    older_than_days: int = Field(ge=1, le=36500)
 
 
 def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> APIRouter:

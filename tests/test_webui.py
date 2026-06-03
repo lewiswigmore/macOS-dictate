@@ -229,3 +229,124 @@ def test_history_path_symlink_is_refused(tmp_path: Path) -> None:
     store = HistoryStore(cfg)
     with pytest.raises(PermissionError):
         store._write_rows_unlocked([{"ts": "2025-01-01T00:00:00Z", "raw": "hi"}])
+
+
+class TestPurgeApiValidation:
+    """``older_than_days=0`` against /api/purge would wipe every transcript
+    with a parseable timestamp. The HTML form is bounded by ``min="1"`` and
+    the CLI/auto-purge path early-returns on ``days <= 0``; the API must
+    enforce the same contract so a typo or intercepted request cannot
+    destroy the whole history."""
+
+    def test_zero_days_is_rejected(self, client: TestClient) -> None:
+        resp = client.post("/api/purge", json={"older_than_days": 0})
+        assert resp.status_code == 422
+
+    def test_negative_days_is_rejected(self, client: TestClient) -> None:
+        resp = client.post("/api/purge", json={"older_than_days": -1})
+        assert resp.status_code == 422
+
+    def test_two_day_cutoff_only_deletes_older_entries(
+        self, cfg: Config, history_path: Path
+    ) -> None:
+        from dictate.webui.store import HistoryStore
+
+        store = HistoryStore(cfg)
+        before = store.count()
+        # Fixture has a 1-day-old entry and a 40-day-old entry; with a
+        # 2-day cutoff only the 40-day one should fall off.
+        deleted = store.purge_older_than(2)
+        assert deleted == 1
+        assert store.count() == before - 1
+
+    def test_store_purge_zero_is_noop_defence_in_depth(
+        self, cfg: Config, history_path: Path
+    ) -> None:
+        """Even with the API tightened, the store itself must refuse
+        ``days <= 0`` so future call sites (scripts, tests) inherit the
+        same safety."""
+        from dictate.webui.store import HistoryStore
+
+        store = HistoryStore(cfg)
+        before = store.count()
+        assert store.purge_older_than(0) == 0
+        assert store.purge_older_than(-5) == 0
+        assert store.count() == before
+
+
+def test_webui_store_tmp_file_is_0o600(tmp_path: Path, monkeypatch) -> None:
+    """The webui ``HistoryStore._write_rows_unlocked`` path used to open
+    its tmp file with ``Path.open("w")`` which honours the process umask
+    (typically 0o022 on macOS) and briefly produced a 0o644 sibling
+    containing the full history. Switching to ``tempfile.NamedTemporaryFile``
+    makes the tmp file 0o600 from creation. Verify by spying on the
+    tempfile call and recording the mode immediately after creation."""
+    import os as _os
+    import stat as _stat
+    import tempfile as _tempfile
+
+    from dictate.webui.store import HistoryStore
+
+    history_path = tmp_path / "history.jsonl"
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(history_path)}})
+    store = HistoryStore(cfg)
+
+    observed_modes: list[int] = []
+    real_ntf = _tempfile.NamedTemporaryFile
+
+    def spy(*args, **kwargs):
+        handle = real_ntf(*args, **kwargs)
+        observed_modes.append(_stat.S_IMODE(_os.stat(handle.name).st_mode))
+        return handle
+
+    monkeypatch.setattr("dictate.webui.store.tempfile.NamedTemporaryFile", spy)
+    store._write_rows_unlocked(
+        [{"ts": "2025-01-01T00:00:00Z", "raw": "secret-bearing line"}]
+    )
+
+    assert observed_modes, "expected NamedTemporaryFile to be called"
+    assert all(m == 0o600 for m in observed_modes), (
+        f"expected 0o600 from the moment of tmp creation, got "
+        f"{[oct(m) for m in observed_modes]}"
+    )
+    assert (history_path.stat().st_mode & 0o777) == 0o600
+    leftovers = [
+        p.name
+        for p in tmp_path.iterdir()
+        if p.name != history_path.name and p.name.endswith(".tmp")
+    ]
+    assert leftovers == [], f"expected no tmp leftovers, got {leftovers}"
+
+
+def test_webui_store_tmp_sibling_removed_on_write_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """If os.replace fails mid-rewrite, the tmp file must not be left on
+    disk. Without try/finally cleanup the failed rewrite would accumulate
+    0o600 tmp siblings containing the full transcript that the app would
+    never clean up on subsequent runs."""
+    from dictate.webui.store import HistoryStore
+
+    history_path = tmp_path / "history.jsonl"
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(history_path)}})
+    store = HistoryStore(cfg)
+
+    boom = OSError("simulated rename failure")
+    monkeypatch.setattr(
+        "dictate.webui.store.os.replace",
+        lambda *_a, **_k: (_ for _ in ()).throw(boom),
+    )
+
+    with pytest.raises(OSError, match="simulated rename failure"):
+        store._write_rows_unlocked(
+            [{"ts": "2025-01-01T00:00:00Z", "raw": "secret"}]
+        )
+
+    leftovers = [
+        p.name
+        for p in tmp_path.iterdir()
+        if p.name != history_path.name and p.name.endswith(".tmp")
+    ]
+    assert leftovers == [], (
+        f"expected tmp file to be cleaned up after rename error, got {leftovers}"
+    )

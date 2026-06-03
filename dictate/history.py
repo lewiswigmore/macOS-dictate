@@ -4,6 +4,7 @@ import errno
 import json
 import os
 import subprocess
+import tempfile
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -150,9 +151,32 @@ def purge_older_than(config: Config, days: int) -> int:
                 continue
             kept.append(raw)
         if deleted:
-            tmp = path.with_suffix(path.suffix + ".tmp")
-            tmp.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
-            os.replace(tmp, path)
+            # tempfile.NamedTemporaryFile creates with 0o600 by default
+            # (process umask is ignored), so the rewritten history is owner-
+            # only from the moment the first byte hits disk. Path.write_text
+            # would have produced a 0o644 sibling and briefly leaked the
+            # full retained transcript to same-user processes (browser
+            # extensions, third-party tools) — the exact attacker class
+            # _ensure_secure_mode was written to defend against.
+            tmp = tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=str(path.parent),
+                prefix=path.name + ".",
+                suffix=".tmp",
+                delete=False,
+            )
+            tmp_path: str | None = tmp.name
+            try:
+                with tmp:
+                    tmp.write("\n".join(kept) + ("\n" if kept else ""))
+                    tmp.flush()
+                    os.fsync(tmp.fileno())
+                os.replace(tmp_path, path)
+                tmp_path = None
+            finally:
+                if tmp_path is not None:
+                    Path(tmp_path).unlink(missing_ok=True)
             _ensure_secure_mode(path)
             log.info("auto-purged %d history entries older than %d days", deleted, days)
     return deleted
