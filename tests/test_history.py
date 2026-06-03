@@ -179,3 +179,90 @@ class TestPurgeOlderThan:
         lines = path.read_text().strip().splitlines()
         assert "not-json-keep" in lines
         assert any('"no_ts"' in line for line in lines)
+
+
+class TestPurgeTmpFileMode:
+    """Round-4 fix (security): the rewritten history must be born 0o600 so
+    no same-user process can read it during the brief window between write
+    and rename. Path.write_text honours umask (typically 0o022 on macOS)
+    and would have left ``history.jsonl.tmp`` world-readable. Using
+    tempfile.NamedTemporaryFile fixes that — verify the mode the moment
+    the tmp file is created."""
+
+    def test_purge_tmp_file_is_0o600(self, cfg, monkeypatch):
+        import stat as _stat
+        import tempfile as _tempfile
+
+        path = Path(cfg.history_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        old_ts = (datetime.now(UTC) - timedelta(days=100)).isoformat()
+        path.write_text('{"raw": "old", "ts": "' + old_ts + '"}\n')
+        import os as _os
+        _os.chmod(path, 0o600)
+
+        observed_modes: list[int] = []
+        real_ntf = _tempfile.NamedTemporaryFile
+
+        def spy(*args, **kwargs):
+            handle = real_ntf(*args, **kwargs)
+            observed_modes.append(_stat.S_IMODE(_os.stat(handle.name).st_mode))
+            return handle
+
+        monkeypatch.setattr("dictate.history.tempfile.NamedTemporaryFile", spy)
+        deleted = purge_older_than(cfg, days=30)
+        assert deleted == 1
+        assert observed_modes, "expected NamedTemporaryFile to be called"
+        assert all(m == 0o600 for m in observed_modes), (
+            f"expected 0o600 from the moment of tmp creation, got "
+            f"{[oct(m) for m in observed_modes]}"
+        )
+        # Final file is still 0o600 after the replace.
+        assert (path.stat().st_mode & 0o777) == 0o600
+
+    def test_no_tmp_sibling_left_behind(self, cfg):
+        path = Path(cfg.history_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        old_ts = (datetime.now(UTC) - timedelta(days=100)).isoformat()
+        path.write_text('{"raw": "old", "ts": "' + old_ts + '"}\n')
+        import os as _os
+        _os.chmod(path, 0o600)
+        purge_older_than(cfg, days=30)
+        # ``history.jsonl.lock`` is the file-lock sibling; anything else
+        # named ``*.tmp`` would be the leftover we're guarding against.
+        leftovers = [
+            p.name
+            for p in path.parent.iterdir()
+            if p.name != path.name and p.name.endswith(".tmp")
+        ]
+        assert leftovers == [], f"expected no tmp leftovers, got {leftovers}"
+
+    def test_tmp_sibling_removed_on_write_failure(self, cfg, monkeypatch):
+        """If os.replace (or any step after tmp creation) raises, the tmp
+        file must not be left on disk — it would otherwise accumulate over
+        repeated failures and leak the full retained transcript at 0o600
+        in a sibling file that nothing in the app knows to clean up."""
+        path = Path(cfg.history_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        old_ts = (datetime.now(UTC) - timedelta(days=100)).isoformat()
+        path.write_text('{"raw": "old", "ts": "' + old_ts + '"}\n')
+        import os as _os
+        _os.chmod(path, 0o600)
+
+        boom = OSError("simulated rename failure")
+        monkeypatch.setattr(
+            "dictate.history.os.replace",
+            lambda *_a, **_k: (_ for _ in ()).throw(boom),
+        )
+
+        with pytest.raises(OSError, match="simulated rename failure"):
+            purge_older_than(cfg, days=30)
+
+        leftovers = [
+            p.name
+            for p in path.parent.iterdir()
+            if p.name != path.name and p.name.endswith(".tmp")
+        ]
+        assert leftovers == [], (
+            f"expected tmp file to be cleaned up after rename error, got "
+            f"{leftovers}"
+        )
