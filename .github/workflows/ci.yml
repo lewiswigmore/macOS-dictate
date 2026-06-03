@@ -41,7 +41,7 @@ jobs:
               - 'pyproject.toml'
               - 'requirements-*.txt'
               - 'requirements-*.in'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
               - 'install.sh'
 
   test:
