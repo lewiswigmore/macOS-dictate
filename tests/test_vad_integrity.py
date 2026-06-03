@@ -64,13 +64,14 @@ class _FakeResponse:
 
 
 class _FakeClient:
-    def __init__(self, payload: bytes, **_: Any) -> None:
+    def __init__(self, payload: bytes, status: int = 200, **_: Any) -> None:
         self._payload = payload
+        self._status = status
         self.requested_urls: list[str] = []
 
     def stream(self, _method: str, url: str) -> _FakeResponse:
         self.requested_urls.append(url)
-        return _FakeResponse(self._payload)
+        return _FakeResponse(self._payload, status=self._status)
 
     def __enter__(self) -> _FakeClient:
         return self
@@ -79,7 +80,9 @@ class _FakeClient:
         return None
 
 
-def _patch_httpx(monkeypatch: pytest.MonkeyPatch, payload: bytes) -> _FakeClient:
+def _patch_httpx(
+    monkeypatch: pytest.MonkeyPatch, payload: bytes
+) -> dict[str, _FakeClient]:
     client_holder: dict[str, _FakeClient] = {}
 
     def fake_client_factory(**kwargs: Any) -> _FakeClient:
@@ -89,7 +92,7 @@ def _patch_httpx(monkeypatch: pytest.MonkeyPatch, payload: bytes) -> _FakeClient
 
     fake_httpx = SimpleNamespace(Client=fake_client_factory)
     monkeypatch.setitem(__import__("sys").modules, "httpx", fake_httpx)
-    return client_holder  # type: ignore[return-value]
+    return client_holder
 
 
 def test_validates_https_only() -> None:
@@ -207,3 +210,45 @@ def test_download_failure_cleans_up_partial(
     with pytest.raises(RuntimeError, match="Failed to download"):
         vad_module._download_model(dest)
     assert not dest.exists()
+    assert list(dest.parent.glob(".silero_vad.onnx.*.part")) == []
+
+
+def test_download_rejects_3xx_response(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    _pin_sha: None,
+) -> None:
+    """With follow_redirects=False, a 3xx response must fail-fast rather
+    than silently writing the redirect body to disk."""
+
+    def factory(**kwargs: Any) -> _FakeClient:
+        return _FakeClient(b"redirect-body", status=302, **kwargs)
+
+    monkeypatch.setitem(
+        __import__("sys").modules, "httpx", SimpleNamespace(Client=factory)
+    )
+
+    dest = tmp_path / "silero_vad.onnx"
+    with pytest.raises(RuntimeError, match="Failed to download"):
+        vad_module._download_model(dest)
+    assert not dest.exists()
+    assert list(dest.parent.glob(".silero_vad.onnx.*.part")) == []
+
+
+def test_download_writes_via_tempfile_then_renames(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    _pin_sha: None,
+) -> None:
+    """Confirm the success path leaves no .part sibling files behind and the
+    bytes at dest are exactly what was streamed (not a partial)."""
+    good_bytes = b"silero-onnx-bytes-for-tests"
+    monkeypatch.setattr(vad_module, "MODEL_SHA256", hashlib.sha256(good_bytes).hexdigest())
+    holder = _patch_httpx(monkeypatch, good_bytes)
+
+    dest = tmp_path / "silero_vad.onnx"
+    returned = vad_module._download_model(dest)
+    assert returned == dest
+    assert dest.read_bytes() == good_bytes
+    assert list(dest.parent.glob(".silero_vad.onnx.*.part")) == []
+    assert holder["client"].requested_urls == [vad_module.MODEL_URL]

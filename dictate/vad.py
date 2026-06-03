@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -101,36 +103,56 @@ def _download_model(dest: Path) -> Path:
     _validate_model_url(MODEL_URL)
     log.info("Downloading silero-vad ONNX model to %s", dest)
     digest = hashlib.sha256()
+    # Stream into a sibling tmp file and atomic-rename on success so that a
+    # crash mid-download cannot leave a half-written file at the dest path
+    # (which the next launch would happily reuse via the cached-load branch).
+    tmp = tempfile.NamedTemporaryFile(
+        mode="wb",
+        dir=dest.parent,
+        prefix=f".{dest.name}.",
+        suffix=".part",
+        delete=False,
+    )
+    tmp_path = Path(tmp.name)
     try:
-        import httpx
+        try:
+            import httpx
 
-        # follow_redirects=False: the canonical raw URL is a 200 in one hop;
-        # any 3xx is unexpected and is treated as an integrity failure.
-        with (
-            httpx.Client(follow_redirects=False, timeout=120.0, verify=True) as client,
-            client.stream("GET", MODEL_URL) as resp,
-        ):
-            resp.raise_for_status()
-            with dest.open("wb") as f:
-                for chunk in resp.iter_bytes(65536):
-                    digest.update(chunk)
-                    f.write(chunk)
-    except Exception as exc:
-        if dest.exists():
-            dest.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"Failed to download silero-vad model: {exc}\n"
-            f"Manual download URL: {MODEL_URL}\n"
-            f"Save to:            {dest}"
-        ) from exc
+            # follow_redirects=False: the canonical raw URL is a 200 in one
+            # hop; any 3xx is unexpected and is treated as an integrity
+            # failure rather than silently followed off-host.
+            with (
+                httpx.Client(follow_redirects=False, timeout=120.0, verify=True) as client,
+                client.stream("GET", MODEL_URL) as resp,
+            ):
+                resp.raise_for_status()
+                if resp.status_code != 200:
+                    raise RuntimeError(
+                        f"silero-vad fetch returned unexpected status "
+                        f"{resp.status_code}; refusing to follow redirects."
+                    )
+                with tmp:
+                    for chunk in resp.iter_bytes(65536):
+                        digest.update(chunk)
+                        tmp.write(chunk)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to download silero-vad model: {exc}\n"
+                f"Manual download URL: {MODEL_URL}\n"
+                f"Save to:            {dest}"
+            ) from exc
 
-    actual = digest.hexdigest()
-    if actual != MODEL_SHA256:
-        dest.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"silero-vad SHA256 mismatch: got {actual}, want {MODEL_SHA256}. "
-            f"Refusing to load an unverified ONNX model. Source: {MODEL_URL}"
-        )
+        actual = digest.hexdigest()
+        if actual != MODEL_SHA256:
+            raise RuntimeError(
+                f"silero-vad SHA256 mismatch: got {actual}, want {MODEL_SHA256}. "
+                f"Refusing to load an unverified ONNX model. Source: {MODEL_URL}"
+            )
+
+        os.replace(tmp_path, dest)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
 
     log.info("silero-vad model saved (%d bytes, sha256 verified)", dest.stat().st_size)
     return dest
