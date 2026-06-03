@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import os
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import numpy as np
 
@@ -14,7 +18,25 @@ if TYPE_CHECKING:
 
 log = get_logger(__name__)
 
-MODEL_URL = "https://github.com/snakers4/silero-vad/raw/master/src/silero_vad/data/silero_vad.onnx"
+# Pinned to silero-vad v6.2.1 (released by snakers4/silero-vad). The model is
+# fetched once at first launch and verified against MODEL_SHA256 below; an
+# upstream rewrite or MITM that doesn't match the pinned hash is rejected.
+# The raw URL skips the github.com → raw.githubusercontent.com redirect so
+# we can keep `follow_redirects=False` and still fetch in one hop.
+_MODEL_TAG = "v6.2.1"
+MODEL_URL = (
+    "https://raw.githubusercontent.com/snakers4/silero-vad/"
+    f"{_MODEL_TAG}/src/silero_vad/data/silero_vad.onnx"
+)
+# sha256(silero_vad.onnx @ v6.2.1) — verified against the local artefact and
+# the upstream tagged blob. If silero ships a new model, bump _MODEL_TAG and
+# this constant together.
+MODEL_SHA256 = "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3"
+# Single permitted host for the download. Combined with follow_redirects=False
+# this means a hijacked DNS / MITM / hostile redirect cannot drag us off to
+# attacker infrastructure that would then serve a hash-matching but malicious
+# ONNX (the hash check is the real defence, this is belt-and-braces).
+_ALLOWED_HOST = "raw.githubusercontent.com"
 _MODEL_FILENAME = "silero_vad.onnx"
 
 # Silero-vad ONNX requires exactly 512 samples per chunk at 16 kHz (32 ms)
@@ -28,34 +50,111 @@ _CHUNK_MS: float = _CHUNK_SAMPLES / _SAMPLE_RATE * 1000.0  # 32 ms
 _CONTEXT_SAMPLES: int = 64
 
 
+def _sha256_file(path: Path) -> str:
+    """Return the hex SHA256 of ``path``. ~2 MB file, hashes in well under
+    100 ms — cheap enough to run on every load."""
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validate_model_url(url: str) -> None:
+    """Refuse to fetch anything that isn't an HTTPS URL on the pinned host.
+
+    The hash check is the real integrity gate, but enforcing scheme + host
+    catches misconfiguration / accidental redirects / a future code path
+    that swaps MODEL_URL out for an attacker-controlled value before the
+    request is sent.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise RuntimeError(f"refusing non-https silero-vad URL: {url}")
+    if parsed.hostname != _ALLOWED_HOST:
+        raise RuntimeError(
+            f"refusing silero-vad URL on unexpected host {parsed.hostname!r}; "
+            f"expected {_ALLOWED_HOST}"
+        )
+
+
 def _download_model(dest: Path) -> Path:
-    """Download silero_vad.onnx to dest; returns dest."""
+    """Download silero_vad.onnx to dest and verify its SHA256; returns dest.
+
+    If ``dest`` already exists, the cached file is hashed and reused on a
+    match. A stale or tampered cache (e.g. an attacker writing to
+    ``~/dictate/models/silero_vad.onnx`` directly) is detected and replaced
+    with a fresh, verified copy from the pinned upstream.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
-        return dest
+        actual = _sha256_file(dest)
+        if actual == MODEL_SHA256:
+            return dest
+        log.warning(
+            "silero-vad cache at %s failed SHA256 check (got %s, want %s); "
+            "deleting and re-downloading",
+            dest,
+            actual,
+            MODEL_SHA256,
+        )
+        dest.unlink(missing_ok=True)
 
+    _validate_model_url(MODEL_URL)
     log.info("Downloading silero-vad ONNX model to %s", dest)
+    digest = hashlib.sha256()
+    # Stream into a sibling tmp file and atomic-rename on success so that a
+    # crash mid-download cannot leave a half-written file at the dest path
+    # (which the next launch would happily reuse via the cached-load branch).
+    tmp = tempfile.NamedTemporaryFile(
+        mode="wb",
+        dir=dest.parent,
+        prefix=f".{dest.name}.",
+        suffix=".part",
+        delete=False,
+    )
+    tmp_path = Path(tmp.name)
     try:
-        import httpx
+        try:
+            import httpx
 
-        with (
-            httpx.Client(follow_redirects=True, timeout=120.0, verify=True) as client,
-            client.stream("GET", MODEL_URL) as resp,
-        ):
-            resp.raise_for_status()
-            with dest.open("wb") as f:
-                for chunk in resp.iter_bytes(65536):
-                    f.write(chunk)
-    except Exception as exc:
-        if dest.exists():
-            dest.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"Failed to download silero-vad model: {exc}\n"
-            f"Manual download URL: {MODEL_URL}\n"
-            f"Save to:            {dest}"
-        ) from exc
+            # follow_redirects=False: the canonical raw URL is a 200 in one
+            # hop; any 3xx is unexpected and is treated as an integrity
+            # failure rather than silently followed off-host.
+            with (
+                httpx.Client(follow_redirects=False, timeout=120.0, verify=True) as client,
+                client.stream("GET", MODEL_URL) as resp,
+            ):
+                resp.raise_for_status()
+                if resp.status_code != 200:
+                    raise RuntimeError(
+                        f"silero-vad fetch returned unexpected status "
+                        f"{resp.status_code}; refusing to follow redirects."
+                    )
+                with tmp:
+                    for chunk in resp.iter_bytes(65536):
+                        digest.update(chunk)
+                        tmp.write(chunk)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to download silero-vad model: {exc}\n"
+                f"Manual download URL: {MODEL_URL}\n"
+                f"Save to:            {dest}"
+            ) from exc
 
-    log.info("silero-vad model saved (%d bytes)", dest.stat().st_size)
+        actual = digest.hexdigest()
+        if actual != MODEL_SHA256:
+            raise RuntimeError(
+                f"silero-vad SHA256 mismatch: got {actual}, want {MODEL_SHA256}. "
+                f"Refusing to load an unverified ONNX model. Source: {MODEL_URL}"
+            )
+
+        os.replace(tmp_path, dest)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+
+    log.info("silero-vad model saved (%d bytes, sha256 verified)", dest.stat().st_size)
     return dest
 
 
