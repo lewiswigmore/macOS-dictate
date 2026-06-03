@@ -1,9 +1,9 @@
-pyobjc-core>=12.1
-pyobjc-framework-Cocoa>=12.1
-pyobjc-framework-Quartz>=12.1
-pyobjc-framework-AVFoundation>=12.1
-pyobjc-framework-ApplicationServices>=12.1
-pyobjc-framework-Speech>=12.1
+pyobjc-core>=12.2
+pyobjc-framework-Cocoa>=12.2
+pyobjc-framework-Quartz>=12.2
+pyobjc-framework-AVFoundation>=12.2
+pyobjc-framework-ApplicationServices>=12.2
+pyobjc-framework-Speech>=12.2
 rumps>=0.4.0
 faster-whisper>=1.2.1
 onnxruntime>=1.26.0
