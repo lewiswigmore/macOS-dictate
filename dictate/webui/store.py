@@ -339,7 +339,13 @@ class HistoryStore:
         return "\n\n---\n\n".join(blocks)
 
     def purge_older_than(self, days: int) -> int:
-        cutoff = datetime.now(UTC) - timedelta(days=max(days, 0))
+        # Defence in depth against an unguarded caller — ``days <= 0`` would
+        # match every entry with a parseable timestamp and wipe the history.
+        # Mirrors the early-return guard in ``dictate.history.purge_older_than``
+        # so both call sites carry the same contract.
+        if days <= 0:
+            return 0
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         ids = [
             entry.id
             for entry in self._entries()

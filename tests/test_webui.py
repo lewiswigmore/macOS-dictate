@@ -229,3 +229,46 @@ def test_history_path_symlink_is_refused(tmp_path: Path) -> None:
     store = HistoryStore(cfg)
     with pytest.raises(PermissionError):
         store._write_rows_unlocked([{"ts": "2025-01-01T00:00:00Z", "raw": "hi"}])
+
+
+class TestPurgeApiValidation:
+    """``older_than_days=0`` against /api/purge would wipe every transcript
+    with a parseable timestamp. The HTML form is bounded by ``min="1"`` and
+    the CLI/auto-purge path early-returns on ``days <= 0``; the API must
+    enforce the same contract so a typo or intercepted request cannot
+    destroy the whole history."""
+
+    def test_zero_days_is_rejected(self, client: TestClient) -> None:
+        resp = client.post("/api/purge", json={"older_than_days": 0})
+        assert resp.status_code == 422
+
+    def test_negative_days_is_rejected(self, client: TestClient) -> None:
+        resp = client.post("/api/purge", json={"older_than_days": -1})
+        assert resp.status_code == 422
+
+    def test_two_day_cutoff_only_deletes_older_entries(
+        self, cfg: Config, history_path: Path
+    ) -> None:
+        from dictate.webui.store import HistoryStore
+
+        store = HistoryStore(cfg)
+        before = store.count()
+        # Fixture has a 1-day-old entry and a 40-day-old entry; with a
+        # 2-day cutoff only the 40-day one should fall off.
+        deleted = store.purge_older_than(2)
+        assert deleted == 1
+        assert store.count() == before - 1
+
+    def test_store_purge_zero_is_noop_defence_in_depth(
+        self, cfg: Config, history_path: Path
+    ) -> None:
+        """Even with the API tightened, the store itself must refuse
+        ``days <= 0`` so future call sites (scripts, tests) inherit the
+        same safety."""
+        from dictate.webui.store import HistoryStore
+
+        store = HistoryStore(cfg)
+        before = store.count()
+        assert store.purge_older_than(0) == 0
+        assert store.purge_older_than(-5) == 0
+        assert store.count() == before
