@@ -235,3 +235,34 @@ class TestPurgeTmpFileMode:
             if p.name != path.name and p.name.endswith(".tmp")
         ]
         assert leftovers == [], f"expected no tmp leftovers, got {leftovers}"
+
+    def test_tmp_sibling_removed_on_write_failure(self, cfg, monkeypatch):
+        """If os.replace (or any step after tmp creation) raises, the tmp
+        file must not be left on disk — it would otherwise accumulate over
+        repeated failures and leak the full retained transcript at 0o600
+        in a sibling file that nothing in the app knows to clean up."""
+        path = Path(cfg.history_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        old_ts = (datetime.now(UTC) - timedelta(days=100)).isoformat()
+        path.write_text('{"raw": "old", "ts": "' + old_ts + '"}\n')
+        import os as _os
+        _os.chmod(path, 0o600)
+
+        boom = OSError("simulated rename failure")
+        monkeypatch.setattr(
+            "dictate.history.os.replace",
+            lambda *_a, **_k: (_ for _ in ()).throw(boom),
+        )
+
+        with pytest.raises(OSError, match="simulated rename failure"):
+            purge_older_than(cfg, days=30)
+
+        leftovers = [
+            p.name
+            for p in path.parent.iterdir()
+            if p.name != path.name and p.name.endswith(".tmp")
+        ]
+        assert leftovers == [], (
+            f"expected tmp file to be cleaned up after rename error, got "
+            f"{leftovers}"
+        )

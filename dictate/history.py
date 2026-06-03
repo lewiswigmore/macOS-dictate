@@ -158,19 +158,25 @@ def purge_older_than(config: Config, days: int) -> int:
             # full retained transcript to same-user processes (browser
             # extensions, third-party tools) — the exact attacker class
             # _ensure_secure_mode was written to defend against.
-            with tempfile.NamedTemporaryFile(
+            tmp = tempfile.NamedTemporaryFile(
                 mode="w",
                 encoding="utf-8",
                 dir=str(path.parent),
                 prefix=path.name + ".",
                 suffix=".tmp",
                 delete=False,
-            ) as tmp_file:
-                tmp_file.write("\n".join(kept) + ("\n" if kept else ""))
-                tmp_file.flush()
-                os.fsync(tmp_file.fileno())
-                tmp_path = tmp_file.name
-            os.replace(tmp_path, path)
+            )
+            tmp_path: str | None = tmp.name
+            try:
+                with tmp:
+                    tmp.write("\n".join(kept) + ("\n" if kept else ""))
+                    tmp.flush()
+                    os.fsync(tmp.fileno())
+                os.replace(tmp_path, path)
+                tmp_path = None
+            finally:
+                if tmp_path is not None:
+                    Path(tmp_path).unlink(missing_ok=True)
             _ensure_secure_mode(path)
             log.info("auto-purged %d history entries older than %d days", deleted, days)
     return deleted

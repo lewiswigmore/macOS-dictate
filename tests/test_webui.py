@@ -316,3 +316,37 @@ def test_webui_store_tmp_file_is_0o600(tmp_path: Path, monkeypatch) -> None:
         if p.name != history_path.name and p.name.endswith(".tmp")
     ]
     assert leftovers == [], f"expected no tmp leftovers, got {leftovers}"
+
+
+def test_webui_store_tmp_sibling_removed_on_write_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """If os.replace fails mid-rewrite, the tmp file must not be left on
+    disk. Without try/finally cleanup the failed rewrite would accumulate
+    0o600 tmp siblings containing the full transcript that the app would
+    never clean up on subsequent runs."""
+    from dictate.webui.store import HistoryStore
+
+    history_path = tmp_path / "history.jsonl"
+    cfg = Config(root=tmp_path, settings={"history": {"path": str(history_path)}})
+    store = HistoryStore(cfg)
+
+    boom = OSError("simulated rename failure")
+    monkeypatch.setattr(
+        "dictate.webui.store.os.replace",
+        lambda *_a, **_k: (_ for _ in ()).throw(boom),
+    )
+
+    with pytest.raises(OSError, match="simulated rename failure"):
+        store._write_rows_unlocked(
+            [{"ts": "2025-01-01T00:00:00Z", "raw": "secret"}]
+        )
+
+    leftovers = [
+        p.name
+        for p in tmp_path.iterdir()
+        if p.name != history_path.name and p.name.endswith(".tmp")
+    ]
+    assert leftovers == [], (
+        f"expected tmp file to be cleaned up after rename error, got {leftovers}"
+    )

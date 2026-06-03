@@ -413,20 +413,26 @@ class HistoryStore:
         # of the write — the same attacker class _HISTORY_FILE_MODE / the
         # post-replace chmod were already defending the destination
         # against.
-        with tempfile.NamedTemporaryFile(
+        tmp = tempfile.NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
             dir=str(self.path.parent),
             prefix=self.path.name + ".",
             suffix=".tmp",
             delete=False,
-        ) as tmp_file:
-            for row in rows:
-                tmp_file.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
-            tmp_file.flush()
-            os.fsync(tmp_file.fileno())
-            tmp_path = tmp_file.name
-        os.replace(tmp_path, self.path)
+        )
+        tmp_path = tmp.name
+        try:
+            with tmp:
+                for row in rows:
+                    tmp.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(tmp_path, self.path)
+            tmp_path = None  # consumed by replace
+        finally:
+            if tmp_path is not None:
+                Path(tmp_path).unlink(missing_ok=True)
         try:
             os.chmod(self.path, _HISTORY_FILE_MODE, follow_symlinks=False)
         except (OSError, NotImplementedError):
