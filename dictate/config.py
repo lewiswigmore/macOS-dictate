@@ -51,7 +51,7 @@ def _minimal_defaults(root: Path) -> dict[str, Any]:
             },
             "history": {"path": str(root / "history.jsonl")},
             "logging": {"level": "INFO", "json": True, "file": str(root / "logs/dictate.log")},
-            "asr": {"backend": "faster-whisper", "model": "small.en"},
+            "asr": {"backend": "faster-whisper", "model": "distil-medium.en"},
             "vad": {"enabled": True},
             "hotkey": {"mods": ["cmd"], "key": "h", "mode": "auto"},
         },

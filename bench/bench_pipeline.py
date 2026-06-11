@@ -213,7 +213,7 @@ def run() -> dict[str, Any]:
         raise BenchmarkError("--runs must be at least 1")
 
     config = load_config()
-    model_name = args.model or str(config.get("asr.model", "small.en"))
+    model_name = args.model or str(config.get("asr.model", "distil-medium.en"))
     _audio, audio_duration = read_wav(args.audio)
     model, model_load_ms = load_model(model_name, config)
 
