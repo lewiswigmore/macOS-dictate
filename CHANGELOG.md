@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-11
+
+### Added
+
+- Opt-in **NVIDIA Parakeet** ASR backend for Apple Silicon via `parakeet-mlx`
+  (`asr.backend: parakeet`, `asr.parakeet.model`), with transparent fallback to
+  `faster-whisper` when `parakeet-mlx` is not installed.
+- `[mlx]` and `[parakeet]` optional dependency extras.
+
+### Changed
+
+- Default `faster-whisper` model is now **`distil-medium.en`** (was `small.en`):
+  ~2–6× faster than `medium.en` with accuracy within ~1% WER, and better than
+  `small.en` on both speed and accuracy. Added `distil-small.en` /
+  `distil-medium.en` to the menu-bar model picker.
+- `dictate doctor` now resolves distilled-model Hugging Face repos
+  (`Systran/faster-distil-whisper-*`) correctly.
+
 ## [0.1.0] - 2026-05-25
 
 ### Added

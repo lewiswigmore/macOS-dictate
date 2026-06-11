@@ -139,3 +139,55 @@ def test_meets_confidence_whisper_uses_threshold(cfg) -> None:
     asr = ASR(cfg)
     assert asr.meets_confidence({"confidence": -0.2}) is True
     assert asr.meets_confidence({"confidence": -0.9}) is False
+
+
+class FakeParakeetBackend:
+    from dictate.asr_parakeet import TranscriptionResult as _TR
+
+    def __init__(self, model_name: str = "mlx-community/parakeet-tdt-0.6b-v3") -> None:
+        self.model_name = model_name
+        self.calls: list[Any] = []
+
+    @staticmethod
+    def is_available() -> bool:
+        return True
+
+    def load(self) -> None:
+        pass
+
+    def transcribe(self, audio, *, sample_rate: int = 16000):  # noqa: ARG002
+        self.calls.append(audio)
+        return self._TR(text="parakeet says hi", confidence=1.0, language="en")
+
+    def meets_confidence(self, result, threshold: float) -> bool:  # noqa: ARG002
+        return bool(result.text)
+
+
+def test_parakeet_dispatch(cfg, monkeypatch: pytest.MonkeyPatch) -> None:
+    import dictate.asr_parakeet as parakeet_mod
+
+    monkeypatch.setattr(parakeet_mod, "ParakeetBackend", FakeParakeetBackend, raising=True)
+    cfg.set("asr.backend", "parakeet")
+    asr = ASR(cfg)
+    asr.reload()
+    assert asr.backend == "parakeet"
+    out = asr.transcribe_final(np.zeros(16000, dtype=np.float32))
+    assert out["text"] == "parakeet says hi"
+    # Parakeet path must not instantiate any WhisperModel.
+    assert FakeWhisperModel.instances == []
+    # Partial transcription is a no-op for parakeet (final-only backend).
+    assert asr.transcribe_partial(np.zeros(8000, dtype=np.float32)) == ""
+    assert asr.meets_confidence({"text": "x", "confidence": 1.0}) is True
+    assert asr.meets_confidence({"text": "", "confidence": 1.0}) is False
+
+
+def test_parakeet_falls_back_when_unavailable(cfg, monkeypatch: pytest.MonkeyPatch) -> None:
+    import dictate.asr_parakeet as parakeet_mod
+
+    monkeypatch.setattr(parakeet_mod.ParakeetBackend, "is_available", staticmethod(lambda: False))
+    cfg.set("asr.backend", "parakeet")
+    asr = ASR(cfg)
+    # Unavailable parakeet-mlx → transparent fallback to faster-whisper.
+    assert asr.backend == "faster-whisper"
+    out = asr.transcribe_final(np.zeros(16000, dtype=np.float32))
+    assert "hello world" in out["text"]

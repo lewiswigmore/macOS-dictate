@@ -177,6 +177,24 @@ def _has_hf_snapshot(model: str, cache_dir: Path) -> bool:
         return False
 
 
+def _whisper_repo(model: str) -> str:
+    """Resolve a faster-whisper model name to its Hugging Face repo id.
+
+    Distil models live under ``Systran/faster-distil-whisper-*`` rather than
+    ``Systran/faster-whisper-*``, so use faster-whisper's own mapping when
+    available and fall back to the plain naming otherwise.
+    """
+    try:
+        from faster_whisper.utils import _MODELS
+
+        repo = _MODELS.get(model)
+        if repo:
+            return repo
+    except Exception:  # noqa: BLE001
+        pass
+    return f"Systran/faster-whisper-{model}"
+
+
 def _model_lines(config: Config) -> list[CheckLine]:
     if os.environ.get("DICTATE_DOCTOR_SKIP_SLOW_CHECKS"):
         return [
@@ -184,11 +202,12 @@ def _model_lines(config: Config) -> list[CheckLine]:
             CheckLine(UNKNOWN, "Silero VAD", "skipped"),
         ]
     lines: list[CheckLine] = []
-    whisper_model = str(config.get("asr.model", "small.en"))
+    whisper_model = str(config.get("asr.model", "distil-medium.en"))
     whisper_dir = config.models_dir / "whisper"
     whisper_present = any(whisper_dir.glob(f"**/*{whisper_model}*"))
     if not whisper_present:
-        whisper_present = _has_hf_snapshot(f"Systran/faster-whisper-{whisper_model}", whisper_dir)
+        repo = _whisper_repo(whisper_model)
+        whisper_present = _has_hf_snapshot(repo, whisper_dir)
     detail = whisper_model if not whisper_present else f"{whisper_model} (present)"
     lines.append(CheckLine(OK if whisper_present else PROBLEM, "Whisper", detail))
 

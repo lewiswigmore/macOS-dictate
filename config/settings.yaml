@@ -1,10 +1,14 @@
 # dictate main settings
 
 asr:
-  backend: faster-whisper           # faster-whisper | mlx | apple (on-device SFSpeech)
-  model: small.en                   # tiny.en | base.en | small.en | medium.en | large-v3
+  backend: faster-whisper           # faster-whisper | mlx | parakeet | apple (on-device SFSpeech)
+  model: distil-medium.en           # tiny.en | base.en | small.en | distil-small.en | distil-medium.en | medium.en | large-v3
+                                    # distil-medium.en is the default: ~2-6x faster than medium.en
+                                    # with accuracy within ~1% WER, and beats small.en on both.
   # mlx:
-  #   model: mlx-community/whisper-small.en-mlx  # opt-in: pip install mlx-whisper
+  #   model: mlx-community/whisper-small.en-mlx       # opt-in: pip install mlx-whisper
+  # parakeet:
+  #   model: mlx-community/parakeet-tdt-0.6b-v3       # opt-in: pip install parakeet-mlx (Apple Silicon)
   compute_type: int8                # int8 (default), int8_float16, float16, float32
   language: en                      # null for auto-detect
   beam_partial: 1                   # while streaming

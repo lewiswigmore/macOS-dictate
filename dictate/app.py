@@ -190,6 +190,7 @@ class App:
 
         self._pipeline_lock = threading.Lock()
         self._last_transcript: dict | None = None
+        self._start_frontmost: dict | None = None
         self._shutting_down = False
         self._endpoint_watcher: EndpointWatcher | None = None
         self._webui_server: uvicorn.Server | None = None
@@ -595,7 +596,7 @@ class App:
         else:
             threading.Thread(
                 target=self._prewarm_asr_async,
-                args=(self.config.get("asr.model", "small.en"),),
+                args=(self.config.get("asr.model", "distil-medium.en"),),
                 daemon=True,
                 name="asr-prewarm",
             ).start()
@@ -740,6 +741,7 @@ class App:
 
     def _on_hotkey_start(self) -> None:
         try:
+            self._start_frontmost = self.context.frontmost()
             self.hud.show_state("recording")
             self.menubar.set_state("recording")
             self.recorder.start()
@@ -905,7 +907,7 @@ class App:
         return audio
 
     def _phase_transcribe(self, audio, ctx: _PipelineCtx) -> bool:
-        ctx.frontmost = self.context.frontmost()
+        ctx.frontmost = self._start_frontmost if self._start_frontmost else self.context.frontmost()
         ctx.preset = self.context.preset_for(ctx.frontmost)
         ctx.selection = self.context.read_selection(frontmost=ctx.frontmost)
 
@@ -1025,7 +1027,47 @@ class App:
         self.hud.show_state("pasting")
         self.menubar.set_state("pasting")
         t0 = time.monotonic()
+
+        current_frontmost = self.context.frontmost()
+        did_switch_app = False
+        original_app = None
+        current_app = None
+
+        try:
+            if ctx.frontmost and current_frontmost and ctx.frontmost.get("bundle_id") != current_frontmost.get("bundle_id"):
+                from AppKit import (  # type: ignore[import]
+                    NSApplicationActivateIgnoringOtherApps,
+                    NSWorkspace,
+                )
+
+                workspace = NSWorkspace.sharedWorkspace()
+                target_bundle_id = ctx.frontmost.get("bundle_id")
+                current_bundle_id = current_frontmost.get("bundle_id")
+
+                for app in workspace.runningApplications():
+                    if app.bundleIdentifier() == target_bundle_id:
+                        original_app = app
+                    elif app.bundleIdentifier() == current_bundle_id:
+                        current_app = app
+
+                if original_app:
+                    log.info("Focus changed during dictation. Switching back to %s", target_bundle_id)
+                    original_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+                    time.sleep(0.1)  # Brief pause to let focus settle
+                    did_switch_app = True
+        except Exception as e:
+            log.warning("App switch dance failed before paste: %s", e)
+
         ok = self.typer.paste(ctx.cleaned)
+
+        try:
+            if did_switch_app and current_app:
+                # Wait briefly for paste to process before switching away
+                time.sleep(0.1)
+                current_app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+        except Exception as e:
+            log.warning("App switch dance failed after paste: %s", e)
+
         if ok:
             self._remember_inserted(ctx.cleaned)
         ctx.metrics["paste_ms"] = int((time.monotonic() - t0) * 1000)

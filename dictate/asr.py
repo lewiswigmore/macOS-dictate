@@ -20,7 +20,7 @@ class ASR:
         self._model: _WhisperModel | None = None
         self._models_dir = config.models_dir / "whisper"
         self._backend: str = self._resolve_backend(config.get("asr.backend", "faster-whisper"))
-        self._model_name: str = config.get("asr.model", "small.en")
+        self._model_name: str = config.get("asr.model", "distil-medium.en")
         self._loaded_model_name: str | None = None
         self._compute_type: str = config.get("asr.compute_type", "int8")
         self._language: str | None = config.get("asr.language", "en") or None
@@ -34,19 +34,31 @@ class ASR:
         self._load_lock = threading.Lock()
         self._apple: Any | None = None  # lazy-built AppleASR delegate
         self._mlx: Any | None = None
+        self._parakeet: Any | None = None
 
     @staticmethod
     def _resolve_backend(backend: str) -> str:
-        if backend != "mlx":
-            return backend
-        from dictate.asr_mlx import MLXWhisperBackend
+        if backend == "mlx":
+            from dictate.asr_mlx import MLXWhisperBackend
 
-        if MLXWhisperBackend.is_available():
-            return "mlx"
-        log.error(
-            "mlx-whisper not installed. Install with: pip install mlx-whisper; falling back to faster-whisper"
-        )
-        return "faster-whisper"
+            if MLXWhisperBackend.is_available():
+                return "mlx"
+            log.error(
+                "mlx-whisper not installed. Install with: pip install mlx-whisper; "
+                "falling back to faster-whisper"
+            )
+            return "faster-whisper"
+        if backend == "parakeet":
+            from dictate.asr_parakeet import ParakeetBackend
+
+            if ParakeetBackend.is_available():
+                return "parakeet"
+            log.error(
+                "parakeet-mlx not installed. Install with: pip install parakeet-mlx; "
+                "falling back to faster-whisper"
+            )
+            return "faster-whisper"
+        return backend
 
     @property
     def backend(self) -> str:
@@ -57,6 +69,9 @@ class ASR:
 
     def _is_mlx(self) -> bool:
         return self._backend == "mlx"
+
+    def _is_parakeet(self) -> bool:
+        return self._backend == "parakeet"
 
     def _ensure_apple(self) -> Any:
         from dictate.asr_apple import AppleASR
@@ -73,6 +88,14 @@ class ASR:
             self._mlx = MLXWhisperBackend(model_name=model_name)
         return self._mlx
 
+    def _ensure_parakeet(self) -> Any:
+        from dictate.asr_parakeet import DEFAULT_MODEL, ParakeetBackend
+
+        if self._parakeet is None:
+            model_name = self._config.get("asr.parakeet.model", DEFAULT_MODEL) or DEFAULT_MODEL
+            self._parakeet = ParakeetBackend(model_name=model_name)
+        return self._parakeet
+
     def load(self) -> None:
         """Pre-warm whichever backend is active. Idempotent + thread-safe."""
         if self._is_apple():
@@ -80,6 +103,9 @@ class ASR:
             return
         if self._is_mlx():
             self._ensure_mlx().load()
+            return
+        if self._is_parakeet():
+            self._ensure_parakeet().load()
             return
         with self._load_lock:
             if self._model is None or self._loaded_model_name != self._model_name:
@@ -99,7 +125,7 @@ class ASR:
         """
         old_backend = self._backend
         self._backend = self._resolve_backend(self._config.get("asr.backend", "faster-whisper"))
-        self._model_name = self._config.get("asr.model", "small.en")
+        self._model_name = self._config.get("asr.model", "distil-medium.en")
         self._compute_type = self._config.get("asr.compute_type", "int8")
         self._language = self._config.get("asr.language", "en") or None
         if old_backend != self._backend:
@@ -108,6 +134,8 @@ class ASR:
                 self._apple.reload()
             if self._mlx is not None:
                 self._mlx = None
+            if self._parakeet is not None:
+                self._parakeet = None
         log.info(
             "ASR reload requested; backend=%s target=%s (current=%s)",
             self._backend,
@@ -186,6 +214,19 @@ class ASR:
                 "duration_ms": (time.monotonic() - t0) * 1000.0,
                 "language": result.language,
             }
+        if self._is_parakeet():
+            t0 = time.monotonic()
+            result = self._ensure_parakeet().transcribe(
+                audio,
+                sample_rate=int(self._config.get("audio.sample_rate", 16000)),
+            )
+            return {
+                "text": result.text,
+                "confidence": result.confidence,
+                "segments": [],
+                "duration_ms": (time.monotonic() - t0) * 1000.0,
+                "language": result.language,
+            }
         t0 = time.monotonic()
         segments_iter, _info = self._whisper.transcribe(
             audio,
@@ -227,6 +268,8 @@ class ASR:
             return self._ensure_apple().transcribe_partial(audio, initial_prompt=initial_prompt)
         if self._is_mlx():
             return ""
+        if self._is_parakeet():
+            return ""
         segments_iter, _info = self._whisper.transcribe(
             audio,
             language=self._language,
@@ -250,4 +293,13 @@ class ASR:
                 language=result.get("language"),
             )
             return self._ensure_mlx().meets_confidence(transcription, self._confidence_min)
+        if self._is_parakeet():
+            from dictate.asr_parakeet import TranscriptionResult
+
+            transcription = TranscriptionResult(
+                text=str(result.get("text", "")),
+                confidence=float(result.get("confidence", 0.0)),
+                language=result.get("language"),
+            )
+            return self._ensure_parakeet().meets_confidence(transcription, self._confidence_min)
         return float(result["confidence"]) >= self._confidence_min
