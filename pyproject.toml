@@ -41,6 +41,12 @@ dictate = "dictate.__main__:main"
 dictate-web = "dictate.webui:main"
 
 [project.optional-dependencies]
+mlx = [
+    "mlx-whisper>=0.4.3",
+]
+parakeet = [
+    "parakeet-mlx>=0.5.2",
+]
 dev = [
     "bandit>=1.9.4",
     "pip-audit>=2.10.0",

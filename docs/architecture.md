@@ -60,6 +60,7 @@ flowchart TB
 | `dictate/asr.py` | ASR dispatcher plus `faster-whisper` transcription and confidence reporting. |
 | `dictate/asr_apple.py` | Apple speech-recognition backend integration. |
 | `dictate/asr_mlx.py` | Opt-in MLX Whisper backend for faster Apple Silicon transcription. |
+| `dictate/asr_parakeet.py` | Opt-in NVIDIA Parakeet backend (via `parakeet-mlx`) for low-latency Apple Silicon transcription. |
 | `dictate/audio_cues.py` | Optional start/stop/cancel audio feedback. |
 | `dictate/cleanup.py` | Backend-agnostic cleanup client for Ollama, OpenRouter, and raw fallback. |
 | `dictate/commands.py` | Regex voice-command parsing and command payload generation. |
@@ -93,7 +94,7 @@ flowchart TB
 
 ## Data flow
 
-Audio lives in an in-memory ring buffer and is never written to disk by the dictation pipeline. Transcripts and metadata are appended to `history.jsonl` in plaintext for local review and export. Configuration is read from `config/*.yaml` once at startup, with user-facing vocabulary and replacement files also under `config/`. The default ASR backend is `faster-whisper`; Apple Silicon users can opt into MLX Whisper with `asr.backend: mlx` after installing `mlx-whisper`, while Apple SFSpeech remains available as `apple`. Model weights are cached by HuggingFace under `~/.cache/huggingface/hub/`, and logs are written as structured JSON to `logs/dictate-*.log`.
+Audio lives in an in-memory ring buffer and is never written to disk by the dictation pipeline. Transcripts and metadata are appended to `history.jsonl` in plaintext for local review and export. Configuration is read from `config/*.yaml` once at startup, with user-facing vocabulary and replacement files also under `config/`. The default ASR backend is `faster-whisper`; Apple Silicon users can opt into MLX Whisper with `asr.backend: mlx` after installing `mlx-whisper`, or into NVIDIA Parakeet with `asr.backend: parakeet` after installing `parakeet-mlx`, while Apple SFSpeech remains available as `apple`. Model weights are cached by HuggingFace under `~/.cache/huggingface/hub/`, and logs are written as structured JSON to `logs/dictate-*.log`.
 
 ## Process boundaries
 

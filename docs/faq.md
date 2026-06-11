@@ -18,11 +18,15 @@ Built-in Dictation requires holding fn or saying "Hey Siri", can send audio to A
 
 ## How accurate is it?
 
-Accuracy depends on the Whisper model. `tiny.en` is fast but error-prone, `small.en` is the default good tradeoff, and `medium.en` is more accurate but slower; run `dictate doctor` to see what's loaded.
+Accuracy depends on the Whisper model. `tiny.en` is fast but error-prone, `distil-medium.en` is the default (a distilled model that is roughly 2–6× faster than `medium.en` while keeping accuracy within ~1% WER, and beats `small.en` on both speed and accuracy), and `medium.en` is the most accurate but slowest; run `dictate doctor` to see what's loaded.
 
 ## How do I use MLX for faster transcription on Apple Silicon?
 
-Install the optional backend with `pip install mlx-whisper`, then set `asr.backend: mlx` in `config/settings.yaml` or your user prefs. The default MLX model is `mlx-community/whisper-small.en-mlx`; override it with `asr.mlx.model` if you want another model from `mlx-community` on Hugging Face.
+Install the optional backend with `pip install 'dictate[mlx]'` (or `pip install mlx-whisper`), then set `asr.backend: mlx` in `config/settings.yaml` or your user prefs. The default MLX model is `mlx-community/whisper-small.en-mlx`; override it with `asr.mlx.model` if you want another model from `mlx-community` on Hugging Face.
+
+## How do I use NVIDIA Parakeet on Apple Silicon?
+
+Parakeet is NVIDIA's streaming ASR model and is a strong English option for low latency and accuracy. Install the optional backend with `pip install 'dictate[parakeet]'` (or `pip install parakeet-mlx`), then set `asr.backend: parakeet` in `config/settings.yaml` or your user prefs. The default model is `mlx-community/parakeet-tdt-0.6b-v3`; override it with `asr.parakeet.model` to pick another model from the `mlx-community/parakeet` collection on Hugging Face. Parakeet runs only on Apple Silicon (via MLX); if `parakeet-mlx` is not installed, dictate falls back to `faster-whisper`.
 
 ## Can I dictate code?
 

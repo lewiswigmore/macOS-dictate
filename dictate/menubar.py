@@ -30,7 +30,9 @@ _HOTKEY_MODES: list[tuple[str, str]] = [
 _ASR_MODELS: list[tuple[str, str]] = [
     ("tiny.en", "tiny.en — fastest, lower accuracy"),
     ("base.en", "base.en — faster"),
-    ("small.en", "small.en — balanced (default)"),
+    ("small.en", "small.en — balanced"),
+    ("distil-small.en", "distil-small.en — fast, distilled"),
+    ("distil-medium.en", "distil-medium.en — accurate + fast (default)"),
     ("medium.en", "medium.en — most accurate, slowest"),
 ]
 
@@ -149,7 +151,7 @@ class MenuBar:
         self._startup_menu.update([self._launch_item])
 
         # ── ASR Model submenu ───────────────────────────────────────────────
-        current_model = str(config.get("asr.model", "small.en"))
+        current_model = str(config.get("asr.model", "distil-medium.en"))
         self._model_items: dict[str, Any] = {}
         self._model_menu = rumps.MenuItem("ASR Model")
         for model_id, label in _ASR_MODELS:
