@@ -19,7 +19,7 @@ from dictate.logging_setup import get_logger
 
 log = get_logger(__name__)
 
-_APP_VERSION = "0.1.0"
+_APP_VERSION = "0.2.0"
 
 _HOTKEY_MODES: list[tuple[str, str]] = [
     ("auto", "Auto (hold or tap)"),
