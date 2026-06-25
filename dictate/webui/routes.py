@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from starlette.requests import Request
 
 from dictate import config as config_module
+from dictate import launch_agent
 from dictate.config import Config
 from dictate.logging_setup import get_logger
 from dictate.webui.store import HistoryStore
@@ -60,6 +61,10 @@ EDITABLE_PREFS: list[tuple[str, str, str, str]] = [
 class PrefUpdate(BaseModel):
     key: str
     value: Any
+
+
+class LaunchAtLoginUpdate(BaseModel):
+    enabled: bool
 
 
 class PurgeRequest(BaseModel):
@@ -155,6 +160,7 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
                 editable_prefs=_editable_pref_values(config),
                 prefs_path=str(config.prefs_path),
                 replacements_summary=_replacements_summary(config),
+                launch_at_login=launch_agent.is_installed(),
             ),
         )
 
@@ -175,6 +181,18 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
             log.exception("webui: persist_pref failed for key=%s", payload.key)
             raise HTTPException(status_code=500, detail="persist failed") from exc
         return {"key": payload.key, "value": value, "prefs_path": str(config.prefs_path)}
+
+    @router.post("/api/settings/launch-at-login")
+    async def update_launch_at_login(payload: LaunchAtLoginUpdate) -> dict[str, Any]:
+        try:
+            if payload.enabled:
+                launch_agent.install(config)
+            else:
+                launch_agent.uninstall()
+        except Exception as exc:  # noqa: BLE001
+            log.exception("webui: launch-at-login toggle failed (enabled=%s)", payload.enabled)
+            raise HTTPException(status_code=500, detail="launch-at-login update failed") from exc
+        return {"enabled": launch_agent.is_installed()}
 
     @router.get("/api/transcripts")
     async def transcripts(
