@@ -92,3 +92,57 @@ def test_pref_update_rejects_bad_enum(client: TestClient) -> None:
         json={"key": "logging.level", "value": "TRACE"},
     )
     assert response.status_code == 400
+
+
+def test_settings_shows_launch_at_login_toggle(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(routes.launch_agent, "is_installed", lambda: True)
+
+    response = client.get("/settings")
+
+    assert response.status_code == 200
+    assert 'id="launch-at-login"' in response.text
+    assert "Launch at Login" in response.text
+
+
+def test_launch_at_login_enable_installs(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: dict[str, object] = {}
+    monkeypatch.setattr(
+        routes.launch_agent, "install", lambda cfg: calls.__setitem__("install", cfg)
+    )
+    monkeypatch.setattr(routes.launch_agent, "uninstall", lambda: calls.__setitem__("uninstall", True))
+    monkeypatch.setattr(routes.launch_agent, "is_installed", lambda: True)
+
+    response = client.post("/api/settings/launch-at-login", json={"enabled": True})
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"enabled": True}
+    assert "install" in calls
+    assert "uninstall" not in calls
+
+
+def test_launch_at_login_disable_uninstalls(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: dict[str, object] = {}
+    monkeypatch.setattr(routes.launch_agent, "install", lambda cfg: calls.__setitem__("install", cfg))
+    monkeypatch.setattr(
+        routes.launch_agent, "uninstall", lambda: calls.__setitem__("uninstall", True)
+    )
+    monkeypatch.setattr(routes.launch_agent, "is_installed", lambda: False)
+
+    response = client.post("/api/settings/launch-at-login", json={"enabled": False})
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"enabled": False}
+    assert "uninstall" in calls
+    assert "install" not in calls
+
+
+def test_launch_at_login_requires_csrf_header(cfg: Config) -> None:
+    no_header = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    response = no_header.post("/api/settings/launch-at-login", json={"enabled": True})
+    assert response.status_code == 403
