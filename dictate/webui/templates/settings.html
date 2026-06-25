@@ -51,6 +51,22 @@
 </section>
 {% endif %}
 
+<section class="panel" aria-labelledby="startup-title">
+  <div class="panel-head"><h2 id="startup-title">Startup</h2><span class="badge subtle">Installs a macOS LaunchAgent</span></div>
+  <form id="startup-form" class="prefs-form" autocomplete="off">
+    <div class="pref-group">
+      <div class="pref-row" id="launch-at-login-row">
+        <label for="launch-at-login">
+          <span class="pref-label" id="launch-at-login-label">Launch at Login</span>
+          <span class="pref-key">Relaunch dictate automatically after a restart or login</span>
+        </label>
+        <input type="checkbox" id="launch-at-login" aria-labelledby="launch-at-login-label" {% if launch_at_login %}checked{% endif %}>
+        <span class="pref-status" aria-live="polite"></span>
+      </div>
+    </div>
+  </form>
+</section>
+
 {% if permissions %}
 <section class="panel" aria-labelledby="permissions-title">
   <h2 id="permissions-title">Permissions</h2>
