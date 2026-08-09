@@ -138,11 +138,18 @@ def test_nav_marks_current_page(client: TestClient) -> None:
 
 
 def test_mobile_nav_uses_full_width_tap_targets(client: TestClient) -> None:
-    response = client.get("/static/app.css")
-    assert response.status_code == 200
-    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in response.text
-    assert "min-height: 44px" in response.text
-    assert '.nav-links a[aria-current="page"]' in response.text
+    page = client.get("/")
+    css = client.get("/static/app.css")
+    script = client.get("/static/app.js")
+    assert page.status_code == css.status_code == script.status_code == 200
+    assert 'id="nav-toggle"' in page.text
+    assert 'aria-expanded="false"' in page.text
+    assert 'id="site-nav"' in page.text
+    assert page.text.count('class="nav-icon"') == 4
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in css.text
+    assert "min-height: 44px" in css.text
+    assert ".site-nav[hidden] { display: none; }" in css.text
+    assert "function wireNavigation()" in script.text
 
 
 def test_api_transcripts_returns_fixture_entries(client: TestClient) -> None:

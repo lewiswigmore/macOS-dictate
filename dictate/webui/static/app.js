@@ -124,6 +124,26 @@ function wireShortcuts() {
   });
 }
 
+function wireNavigation() {
+  const toggle = $("nav-toggle");
+  const nav = $("site-nav");
+  if (!toggle || !nav) return;
+
+  const setOpen = (open) => {
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.querySelector(".visually-hidden").textContent = open ? "Close navigation" : "Open navigation";
+    nav.hidden = !open;
+  };
+
+  toggle.addEventListener("click", () => setOpen(toggle.getAttribute("aria-expanded") !== "true"));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+}
+
 function wireList() {
   if (!$("transcripts")) return;
   ["search", "preset", "app", "since"].forEach((id) => $(id).addEventListener("input", debounce(() => { state.offset = 0; loadList(); }, 250)));
@@ -550,7 +570,14 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
-document.addEventListener("DOMContentLoaded", () => { wireShortcuts(); wireList(); loadDetail(); loadStats(); loadDashboard(); });
+document.addEventListener("DOMContentLoaded", () => {
+  wireNavigation();
+  wireShortcuts();
+  wireList();
+  loadDetail();
+  loadStats();
+  loadDashboard();
+});
 
 async function loadDashboard() {
   const recentList = $("recent-list");
