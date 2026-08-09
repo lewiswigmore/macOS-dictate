@@ -124,6 +124,27 @@ def test_nav_has_history_link(client: TestClient) -> None:
     assert ">History<" in response.text
 
 
+def test_nav_marks_current_page(client: TestClient) -> None:
+    dashboard = client.get("/")
+    history = client.get("/history")
+    assert (
+        'href="/" title="Overview, recent activity, and system health" aria-current="page"'
+        in dashboard.text
+    )
+    assert (
+        'href="/history" title="Browse, search, and export every transcript" aria-current="page"'
+        in history.text
+    )
+
+
+def test_mobile_nav_uses_full_width_tap_targets(client: TestClient) -> None:
+    response = client.get("/static/app.css")
+    assert response.status_code == 200
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in response.text
+    assert "min-height: 44px" in response.text
+    assert '.nav-links a[aria-current="page"]' in response.text
+
+
 def test_api_transcripts_returns_fixture_entries(client: TestClient) -> None:
     response = client.get("/api/transcripts")
     assert response.status_code == 200
