@@ -18,12 +18,28 @@
         {{ brand_mark(28) }}
         <span class="brand-name">d<span class="brand-name-i">ı</span>ctate</span>
       </a>
-      <nav class="site-nav" aria-label="Primary">
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="visually-hidden">Open navigation</span>
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Primary" hidden>
         <div class="nav-links">
-          <a href="/" title="Overview, recent activity, and system health"{% if request.url.path == "/" %} aria-current="page"{% endif %}>Dashboard</a>
-          <a href="/history" title="Browse, search, and export every transcript"{% if request.url.path == "/history" or request.url.path.startswith("/entry/") %} aria-current="page"{% endif %}>History</a>
-          <a href="/stats" title="30-day trends, latency, and backend usage"{% if request.url.path == "/stats" %} aria-current="page"{% endif %}>Stats</a>
-          <a href="/settings" title="Privacy, backends, and preferences"{% if request.url.path == "/settings" %} aria-current="page"{% endif %}>Settings</a>
+          <a href="/" title="Overview, recent activity, and system health"{% if request.url.path == "/" %} aria-current="page"{% endif %}>
+            <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
+            <span>Dashboard</span>
+          </a>
+          <a href="/history" title="Browse, search, and export every transcript"{% if request.url.path == "/history" or request.url.path.startswith("/entry/") %} aria-current="page"{% endif %}>
+            <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 8v5l3.5 2.1 1-1.7-2.5-1.5V8h-2Zm0-5a9 9 0 0 0-8.7 6.7L1 7.4V14h6.6l-2.5-2.5A7 7 0 1 1 12 19c-1.8 0-3.4-.7-4.6-1.8L6 18.6A9 9 0 1 0 12 3Z"/></svg>
+            <span>History</span>
+          </a>
+          <a href="/stats" title="30-day trends, latency, and backend usage"{% if request.url.path == "/stats" %} aria-current="page"{% endif %}>
+            <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h4V9H4v10Zm6 0h4V5h-4v14Zm6 0h4v-7h-4v7Z"/></svg>
+            <span>Stats</span>
+          </a>
+          <a href="/settings" title="Privacy, backends, and preferences"{% if request.url.path == "/settings" %} aria-current="page"{% endif %}>
+            <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m19.4 13 .1-1-.1-1 2-1.5-2-3.5-2.5 1a8 8 0 0 0-1.7-1L15 3h-4l-.4 2.9a8 8 0 0 0-1.7 1L6.5 6l-2 3.5 2 1.5-.1 1 .1 1-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.7 1L11 21h4l.4-2.9a8 8 0 0 0 1.7-1l2.4 1 2-3.5-2.1-1.6ZM13 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>
+            <span>Settings</span>
+          </a>
         </div>
       </nav>
     </header>

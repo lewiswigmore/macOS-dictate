@@ -54,11 +54,16 @@ h1 { font-size: 28px; letter-spacing: -0.02em; }
 
 .brand { color: var(--fg); font-weight: 700; }
 .site-nav { align-items: center; display: flex; gap: 18px; }
+.site-nav[hidden] { display: flex; }
+.nav-toggle { display: none; }
 .nav-links { display: flex; align-items: center; gap: 2px; }
 .nav-links a {
+  align-items: center;
   color: var(--muted);
+  display: flex;
   font-size: 13px;
   font-weight: 500;
+  gap: 8px;
   letter-spacing: -0.005em;
   padding: 6px 12px;
   border-radius: 8px;
@@ -73,6 +78,7 @@ h1 { font-size: 28px; letter-spacing: -0.02em; }
   text-decoration: none;
 }
 .nav-links a[aria-current="page"] { font-weight: 600; }
+.nav-icon { display: none; fill: currentColor; height: 18px; width: 18px; }
 .nav-meta { display: flex; align-items: center; gap: 8px; }
 .entry-count {
   border: 1px solid var(--border);
@@ -221,9 +227,44 @@ kbd {
 
 @media (max-width: 640px) {
   h1 { font-size: 22px; }
-  .site-header { align-items: stretch; flex-direction: column; gap: 12px; padding: 12px 16px 14px; }
-  .brand { align-self: flex-start; }
-  .site-nav { width: 100%; }
+  .site-header {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr auto;
+    padding: 12px 16px;
+  }
+  .nav-toggle {
+    align-items: center;
+    background: var(--card);
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+    width: 44px;
+  }
+  .nav-toggle-icon,
+  .nav-toggle-icon::before,
+  .nav-toggle-icon::after {
+    background: currentColor;
+    border-radius: 999px;
+    content: "";
+    display: block;
+    height: 2px;
+    transition: transform 160ms ease, opacity 160ms ease;
+    width: 20px;
+  }
+  .nav-toggle-icon { position: relative; }
+  .nav-toggle-icon::before { left: 0; position: absolute; top: -6px; }
+  .nav-toggle-icon::after { left: 0; position: absolute; top: 6px; }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon { background: transparent; }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon::before { transform: translateY(6px) rotate(45deg); }
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon::after { transform: translateY(-6px) rotate(-45deg); }
+  .site-nav {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .site-nav[hidden] { display: none; }
   .nav-links {
     display: grid;
     gap: 8px;
@@ -234,11 +275,11 @@ kbd {
     align-items: center;
     background: var(--card);
     border: 1px solid var(--border);
-    display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 44px;
-    padding: 9px 12px;
+    padding: 10px 14px;
   }
+  .nav-icon { display: block; }
   .nav-links a[aria-current="page"] {
     border-color: var(--accent);
     box-shadow: inset 0 -2px 0 var(--accent);
