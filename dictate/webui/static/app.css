@@ -65,7 +65,14 @@ h1 { font-size: 28px; letter-spacing: -0.02em; }
   text-decoration: none;
   transition: color 120ms ease, background 120ms ease;
 }
-.nav-links a:hover, .nav-links a:focus { color: var(--fg); background: var(--card); text-decoration: none; }
+.nav-links a:hover,
+.nav-links a:focus,
+.nav-links a[aria-current="page"] {
+  color: var(--fg);
+  background: var(--card);
+  text-decoration: none;
+}
+.nav-links a[aria-current="page"] { font-weight: 600; }
 .nav-meta { display: flex; align-items: center; gap: 8px; }
 .entry-count {
   border: 1px solid var(--border);
@@ -214,8 +221,28 @@ kbd {
 
 @media (max-width: 640px) {
   h1 { font-size: 22px; }
-  .site-header { align-items: flex-start; flex-direction: column; gap: 10px; padding: 12px 16px; }
-  .site-nav { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .site-header { align-items: stretch; flex-direction: column; gap: 12px; padding: 12px 16px 14px; }
+  .brand { align-self: flex-start; }
+  .site-nav { width: 100%; }
+  .nav-links {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .nav-links a {
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+  .nav-links a[aria-current="page"] {
+    border-color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
   .toolbar { flex-direction: column; }
   .toolbar input, .toolbar button { width: 100%; }
   .table-wrap { overflow-x: auto; }
