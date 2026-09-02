@@ -72,4 +72,26 @@ def load_vocab(config: Config, preset: str, project: str | None = None) -> list[
 
 
 def as_initial_prompt(terms: list[str], max_chars: int = 220) -> str:
-    return ", ".join(terms)[:max_chars]
+    """Join vocab terms into a Whisper initial_prompt, truncated to max_chars.
+
+    Truncation drops whole terms rather than cutting one in half, and logs a
+    warning naming what was dropped — previously this silently discarded
+    anything past the cap with no signal to the user.
+    """
+    kept: list[str] = []
+    total = 0
+    for i, term in enumerate(terms):
+        added = len(term) + (2 if kept else 0)  # ", " separator
+        if total + added > max_chars:
+            dropped = terms[i:]
+            log.warning(
+                "vocab prompt truncated at %d chars: dropped %d/%d term(s): %s",
+                max_chars,
+                len(dropped),
+                len(terms),
+                ", ".join(dropped),
+            )
+            break
+        kept.append(term)
+        total += added
+    return ", ".join(kept)
