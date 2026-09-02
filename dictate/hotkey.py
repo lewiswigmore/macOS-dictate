@@ -75,6 +75,10 @@ MOD_MASKS: dict[str, int] = {
 
 _ESC_KEYCODE: int = 53
 
+# Every modifier bit we bind against. Used to require an EXACT modifier match
+# so a Cmd+H binding does not also swallow Cmd+Shift+H.
+_ALL_MOD_MASK: int = 0x100000 | 0x20000 | 0x80000 | 0x40000
+
 # CGEventType values used for tap-disabled sentinels
 _TAP_DISABLED_TIMEOUT: int = 0xFFFFFFFE
 _TAP_DISABLED_USER_INPUT: int = 0xFFFFFFFD
@@ -310,7 +314,15 @@ class HotkeyState:
     # ------------------------------------------------------------------
 
     def _combo_matches(self, keycode: int, flags: int) -> bool:
-        return keycode == self._key_keycode and (flags & self._mod_mask) == self._mod_mask
+        """True only for an EXACT modifier match.
+
+        Subset matching would make a Cmd+H binding also fire on Cmd+Shift+H
+        and Cmd+Ctrl+H — and, with swallow_combo on, eat those combos from
+        whatever app defined them.
+        """
+        if keycode != self._key_keycode:
+            return False
+        return (flags & _ALL_MOD_MASK) == self._mod_mask
 
     def _cancel_hold_timer(self) -> None:
         if self._hold_timer is not None:

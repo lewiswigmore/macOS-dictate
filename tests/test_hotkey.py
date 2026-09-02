@@ -109,6 +109,55 @@ def _make_state(
 
 
 # ------------------------------------------------------------------
+# Test: exact modifier matching (a cmd+h binding must not claim cmd+shift+h)
+# ------------------------------------------------------------------
+
+
+SHIFT_FLAG = 0x20000
+CONTROL_FLAG = 0x40000
+
+
+class TestExactModifierMatch:
+    def test_superset_modifiers_do_not_match(self) -> None:
+        """cmd+shift+h must pass through to the app that owns it."""
+        state, on_start, _on_stop, _on_cancel, timers = _make_state()
+
+        swallowed = state.handle_key_down(H_KEYCODE, CMD_FLAG | SHIFT_FLAG, False)
+
+        assert swallowed is False
+        assert timers._timers == []
+        on_start.assert_not_called()
+
+    def test_control_superset_does_not_match(self) -> None:
+        state, on_start, _on_stop, _on_cancel, timers = _make_state()
+
+        swallowed = state.handle_key_down(H_KEYCODE, CMD_FLAG | CONTROL_FLAG, False)
+
+        assert swallowed is False
+        assert timers._timers == []
+        on_start.assert_not_called()
+
+    def test_exact_modifier_still_matches(self) -> None:
+        state, on_start, _on_stop, _on_cancel, timers = _make_state()
+
+        swallowed = state.handle_key_down(H_KEYCODE, CMD_FLAG, False)
+
+        assert swallowed is True
+        timers.fire_latest()
+        on_start.assert_called_once()
+
+    def test_swallow_disabled_lets_combo_through(self) -> None:
+        """swallow_combo=False → the app's own cmd+h binding still fires."""
+        state, on_start, _on_stop, _on_cancel, timers = _make_state(swallow_combo=False)
+
+        swallowed = state.handle_key_down(H_KEYCODE, CMD_FLAG, False)
+
+        assert swallowed is False
+        timers.fire_latest()
+        on_start.assert_called_once()
+
+
+# ------------------------------------------------------------------
 # Test: HOLD gesture  (cmd+h held > hold_threshold → on_start; release → on_stop)
 # ------------------------------------------------------------------
 
