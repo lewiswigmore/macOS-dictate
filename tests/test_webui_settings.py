@@ -146,3 +146,59 @@ def test_launch_at_login_requires_csrf_header(cfg: Config) -> None:
     no_header = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
     response = no_header.post("/api/settings/launch-at-login", json={"enabled": True})
     assert response.status_code == 403
+
+
+def test_permissions_api_reports_status(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dictate import permissions as permissions_module
+
+    monkeypatch.setattr(
+        permissions_module,
+        "check_all",
+        lambda **_kw: {"accessibility": True, "microphone": True, "input_monitoring": False},
+    )
+
+    response = client.get("/api/permissions")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["all_granted"] is False
+    by_key = {item["key"]: item for item in payload["permissions"]}
+    assert by_key["input_monitoring"]["granted"] is False
+    assert by_key["accessibility"]["granted"] is True
+    # A denied entry must explain the consequence and offer a deep link.
+    assert by_key["input_monitoring"]["impact"]
+    assert by_key["input_monitoring"]["settings_url"].startswith("x-apple.systempreferences:")
+
+
+def test_settings_page_renders_denied_permission(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dictate import permissions as permissions_module
+
+    monkeypatch.setattr(
+        permissions_module,
+        "check_all",
+        lambda **_kw: {"accessibility": True, "microphone": True, "input_monitoring": False},
+    )
+
+    body = client.get("/settings").text
+
+    assert 'data-perm-key="input_monitoring"' in body
+    assert "is-denied" in body
+    assert "Not granted" in body
+    # The fix affordance only renders for the denied row.
+    assert 'data-perm-open="input_monitoring"' in body
+    assert 'data-perm-open="accessibility"' not in body
+
+
+def test_permissions_open_rejects_unknown_key(client: TestClient) -> None:
+    response = client.post("/api/permissions/open", json={"key": "not-a-permission"})
+    assert response.status_code == 400
+
+
+def test_permissions_open_requires_csrf_header(cfg: Config) -> None:
+    no_header = TestClient(create_app(cfg), client=("127.0.0.1", 50000))
+    response = no_header.post("/api/permissions/open", json={"key": "accessibility"})
+    assert response.status_code == 403

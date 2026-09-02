@@ -68,13 +68,32 @@
 </section>
 
 {% if permissions %}
-<section class="panel" aria-labelledby="permissions-title">
+<section class="panel" aria-labelledby="permissions-title" data-permissions-panel>
   <h2 id="permissions-title">Permissions</h2>
-  <ul class="permissions-list" aria-label="macOS permission status">
+  <p class="muted">
+    macOS grants are read when dictate starts. After changing one in System
+    Settings, restart dictate for it to take effect.
+  </p>
+  <p class="perm-banner" data-perm-banner hidden></p>
+  <ul class="permissions-list" aria-label="macOS permission status" data-perm-list>
     {% for permission in permissions %}
-    <li>
-      <span>{{ permission.label }}</span>
-      <span aria-label="{{ permission.label }} {{ 'granted' if permission.granted else 'not granted' }}">{{ '✓' if permission.granted else '✗' }}</span>
+    <li data-perm-key="{{ permission.key }}">
+      <div class="perm-text">
+        <span class="perm-label">{{ permission.label }}</span>
+        {% if not permission.granted %}
+        <span class="perm-impact">{{ permission.impact }}</span>
+        {% endif %}
+      </div>
+      <div class="perm-actions">
+        {% if not permission.granted %}
+        <button type="button" class="perm-open" data-perm-open="{{ permission.key }}">Open Settings</button>
+        {% endif %}
+        <span class="perm-pill {{ 'is-granted' if permission.granted else 'is-denied' }}"
+              data-perm-pill
+              aria-label="{{ permission.label }} {{ 'granted' if permission.granted else 'not granted' }}">
+          {{ 'Granted' if permission.granted else 'Not granted' }}
+        </span>
+      </div>
     </li>
     {% endfor %}
   </ul>

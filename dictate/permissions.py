@@ -24,13 +24,18 @@ class Permissions:
 
     # ── accessibility ─────────────────────────────────────────────────────────
 
-    def check_accessibility(self) -> bool:
-        """Return True if the process has Accessibility (AX) trust."""
+    def check_accessibility(self, *, prompt: bool = True) -> bool:
+        """Return True if the process has Accessibility (AX) trust.
+
+        ``prompt=False`` performs a silent check — required for polled status
+        readouts, since the prompting variant re-opens the System Settings
+        nag every time it is called.
+        """
         try:
             from ApplicationServices import AXIsProcessTrustedWithOptions
 
             # Key is a CFString; PyObjC bridges str→CFString automatically.
-            return bool(AXIsProcessTrustedWithOptions({"AXTrustedCheckOptionPrompt": True}))
+            return bool(AXIsProcessTrustedWithOptions({"AXTrustedCheckOptionPrompt": prompt}))
         except Exception as exc:
             log.warning("accessibility check failed: %s", exc)
             return False
@@ -133,3 +138,35 @@ class Permissions:
             "microphone": self.check_microphone(),
             "input_monitoring": self.check_input_monitoring(),
         }
+
+
+# Consequence of each grant being missing, surfaced in the WebUI.
+_PERMISSION_IMPACT: dict[str, str] = {
+    "accessibility": "Required to paste transcribed text and read the selection.",
+    "microphone": "Required to record audio. Dictation cannot capture anything.",
+    "input_monitoring": "Required for the hotkey. Without it the shortcut does nothing.",
+}
+
+
+def check_all(*, prompt: bool = False) -> dict[str, bool]:
+    """Silent permission snapshot, keyed by permission name.
+
+    Safe to poll: defaults to ``prompt=False`` so no System Settings dialog
+    is raised. Used by the WebUI status panel.
+    """
+    perms = Permissions()
+    return {
+        "accessibility": perms.check_accessibility(prompt=prompt),
+        "microphone": perms.check_microphone(),
+        "input_monitoring": perms.check_input_monitoring(),
+    }
+
+
+def impact(key: str) -> str:
+    """Human-readable consequence of `key` not being granted."""
+    return _PERMISSION_IMPACT.get(key, "")
+
+
+def settings_url(key: str) -> str:
+    """Deep link to the System Settings pane governing `key`."""
+    return _PREF_URLS.get(key, "")

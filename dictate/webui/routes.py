@@ -67,6 +67,10 @@ class LaunchAtLoginUpdate(BaseModel):
     enabled: bool
 
 
+class PermissionOpen(BaseModel):
+    key: str
+
+
 class PurgeRequest(BaseModel):
     # ``older_than_days=0`` would mean "every entry with a parseable timestamp"
     # — never the intended semantics. The CLI/auto-purge path in
@@ -167,6 +171,27 @@ def create_router(store: HistoryStore, templates_dir: Path, config: Config) -> A
     @router.get("/api/replacements")
     async def replacements_api() -> dict[str, Any]:
         return _replacements_summary(config)
+
+    @router.get("/api/permissions")
+    async def permissions_api() -> dict[str, Any]:
+        items = _permissions_status() or []
+        return {
+            "permissions": items,
+            "all_granted": all(bool(item["granted"]) for item in items) if items else False,
+        }
+
+    @router.post("/api/permissions/open")
+    async def permissions_open(payload: PermissionOpen) -> dict[str, bool]:
+        from dictate.permissions import Permissions
+
+        if payload.key not in PERMISSION_LABELS:
+            raise HTTPException(status_code=400, detail=f"unknown permission: {payload.key}")
+        try:
+            Permissions().open_settings_pane(payload.key)
+        except Exception as exc:
+            log.exception("webui: open_settings_pane failed for key=%s", payload.key)
+            raise HTTPException(status_code=500, detail="could not open System Settings") from exc
+        return {"opened": True}
 
     @router.post("/api/settings/pref")
     async def update_pref(payload: PrefUpdate) -> dict[str, Any]:
@@ -419,7 +444,13 @@ def _permissions_status() -> list[dict[str, object]] | None:
         return None
 
     return [
-        {"label": label, "granted": bool(raw_status.get(key))}
+        {
+            "key": key,
+            "label": label,
+            "granted": bool(raw_status.get(key)),
+            "impact": permissions.impact(key),
+            "settings_url": permissions.settings_url(key),
+        }
         for key, label in PERMISSION_LABELS.items()
     ]
 
