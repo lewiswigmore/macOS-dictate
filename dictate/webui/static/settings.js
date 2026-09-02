@@ -55,10 +55,80 @@
       });
     });
   }
+  function renderPermissions(data) {
+    var list = document.querySelector('[data-perm-list]');
+    var banner = document.querySelector('[data-perm-banner]');
+    if (!list || !data || !data.permissions) return;
+
+    data.permissions.forEach(function (perm) {
+      var row = list.querySelector('[data-perm-key="' + perm.key + '"]');
+      if (!row) return;
+      var pill = row.querySelector('[data-perm-pill]');
+      if (pill) {
+        pill.textContent = perm.granted ? 'Granted' : 'Not granted';
+        pill.classList.toggle('is-granted', !!perm.granted);
+        pill.classList.toggle('is-denied', !perm.granted);
+        pill.setAttribute('aria-label', perm.label + (perm.granted ? ' granted' : ' not granted'));
+      }
+      var impact = row.querySelector('.perm-impact');
+      if (perm.granted && impact) impact.remove();
+      var btn = row.querySelector('[data-perm-open]');
+      if (perm.granted && btn) btn.remove();
+    });
+
+    if (banner) {
+      var missing = data.permissions.filter(function (p) { return !p.granted; });
+      if (missing.length) {
+        banner.textContent = missing.length === 1
+          ? missing[0].label + ' is not granted. ' + missing[0].impact
+          : missing.length + ' permissions are not granted — dictate will not work correctly.';
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+      }
+    }
+  }
+
+  function refreshPermissions() {
+    return fetch('/api/permissions', { headers: { 'X-Dictate-WebUI': '1' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(renderPermissions)
+      .catch(function () { /* transient; next poll retries */ });
+  }
+
+  function initPermissions() {
+    var panel = document.querySelector('[data-permissions-panel]');
+    if (!panel) return;
+
+    panel.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-perm-open]');
+      if (!btn) return;
+      btn.disabled = true;
+      fetch('/api/permissions/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Dictate-WebUI': '1' },
+        body: JSON.stringify({ key: btn.dataset.permOpen })
+      }).finally(function () { btn.disabled = false; });
+    });
+
+    refreshPermissions();
+    // Grants land while the user is in System Settings; poll so the panel
+    // reflects reality without a manual reload.
+    setInterval(refreshPermissions, 5000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshPermissions();
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { init(); initLaunchAtLogin(); });
+    document.addEventListener('DOMContentLoaded', function () {
+      init();
+      initLaunchAtLogin();
+      initPermissions();
+    });
   } else {
     init();
     initLaunchAtLogin();
+    initPermissions();
   }
 })();

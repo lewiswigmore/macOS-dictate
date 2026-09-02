@@ -144,6 +144,39 @@ tr.selected { background: var(--card); box-shadow: inset 3px 0 0 var(--accent); 
   padding: 8px 0;
 }
 .permissions-list li:last-child { border-bottom: 0; }
+.perm-text { display: flex; flex-direction: column; gap: 3px; }
+.perm-label { font-weight: 500; }
+.perm-impact { color: var(--muted); font-size: 12px; }
+.perm-actions { align-items: center; display: flex; flex-shrink: 0; gap: 8px; }
+.perm-pill {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+.perm-pill.is-granted { background: var(--card); color: var(--muted); }
+.perm-pill.is-denied { background: #b4232320; color: #d13438; font-weight: 500; }
+:root[data-theme="dark"] .perm-pill.is-denied { background: #f8514920; color: #f85149; }
+.perm-open {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 12px;
+  padding: 5px 11px;
+}
+.perm-banner {
+  background: #b4232312;
+  border-left: 3px solid #d13438;
+  border-radius: 6px;
+  font-size: 13px;
+  margin: 10px 0 4px;
+  padding: 9px 12px;
+}
+:root[data-theme="dark"] .perm-banner {
+  background: #f8514912;
+  border-left-color: #f85149;
+}
 .yaml-block {
   font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   max-height: 70vh;
