@@ -64,7 +64,13 @@ hotkey:
   hold_threshold_ms: 250
   double_tap_window_ms: 400
   cancel_on_escape: true
-  swallow_combo: true               # disable native binding while running
+  swallow_combo: true               # true = dictate consumes the combo, so the
+                                    # system/app binding never sees it. This is
+                                    # what lets cmd+h override "Hide Window".
+                                    # false = the combo passes through and BOTH
+                                    # dictate and the app act on it.
+                                    # Modifier match is exact: cmd+h will not
+                                    # fire on cmd+shift+h.
   pause_override_default: false
   mode: auto                        # auto | hold | toggle
                                     # auto   = hold-to-talk while held; tap toggles
