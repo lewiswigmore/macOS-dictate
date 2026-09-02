@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+
+import pytest
 
 from dictate.config import Config
 from dictate.vocab import as_initial_prompt, load_vocab
@@ -95,15 +98,33 @@ def test_skips_blank_lines_and_comments(tmp_path: Path) -> None:
 
 
 def test_as_initial_prompt_truncates(tmp_path: Path) -> None:
+    """Truncation drops whole terms, never cuts one mid-word."""
     terms = ["alpha", "beta", "gamma", "delta"]
     result = as_initial_prompt(terms, max_chars=10)
     assert len(result) <= 10
-    assert result == "alpha, bet"
+    assert result == "alpha"
 
 
 def test_as_initial_prompt_full(tmp_path: Path) -> None:
     terms = ["a", "b"]
     assert as_initial_prompt(terms) == "a, b"
+
+
+def test_as_initial_prompt_warns_on_drop(caplog: pytest.LogCaptureFixture) -> None:
+    terms = ["alpha", "beta", "gamma"]
+    with caplog.at_level(logging.WARNING, logger="dictate.vocab"):
+        result = as_initial_prompt(terms, max_chars=10)
+    assert result == "alpha"
+    assert any("truncated" in r.message and "beta, gamma" in r.message for r in caplog.records)
+
+
+def test_as_initial_prompt_no_warning_when_everything_fits(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    terms = ["a", "b"]
+    with caplog.at_level(logging.WARNING, logger="dictate.vocab"):
+        as_initial_prompt(terms, max_chars=220)
+    assert caplog.records == []
 
 
 def test_real_config_code_vocab() -> None:
