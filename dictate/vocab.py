@@ -14,6 +14,12 @@ log = get_logger(__name__)
 _VOCAB_CACHE: dict[tuple[str, str | None], tuple[float, list[str]]] = {}
 _VOCAB_LOCK = Lock()
 
+# Tracks which (max_chars, terms) truncations we've already warned about, so
+# a vocab set that overflows the cap logs once rather than on every
+# dictation — as_initial_prompt runs once per utterance.
+_TRUNCATION_WARNED: set[tuple[int, tuple[str, ...]]] = set()
+_TRUNCATION_WARNED_LOCK = Lock()
+
 
 def _candidate_paths(config: Config, preset: str, project: str | None) -> list[Path]:
     vocab_dir = config.root / "config" / "vocab"
@@ -77,13 +83,28 @@ def as_initial_prompt(terms: list[str], max_chars: int = 220) -> str:
     Truncation drops whole terms rather than cutting one in half, and logs a
     warning naming what was dropped — previously this silently discarded
     anything past the cap with no signal to the user.
+
+    This runs once per dictation, so the warning is rate-limited to once per
+    unique (max_chars, terms) truncation rather than firing on every
+    utterance and drowning out other log lines.
     """
     kept: list[str] = []
     total = 0
+    dropped: list[str] = []
     for i, term in enumerate(terms):
         added = len(term) + (2 if kept else 0)  # ", " separator
         if total + added > max_chars:
             dropped = terms[i:]
+            break
+        kept.append(term)
+        total += added
+
+    if dropped:
+        key = (max_chars, tuple(terms))
+        with _TRUNCATION_WARNED_LOCK:
+            already_warned = key in _TRUNCATION_WARNED
+            _TRUNCATION_WARNED.add(key)
+        if not already_warned:
             log.warning(
                 "vocab prompt truncated at %d chars: dropped %d/%d term(s): %s",
                 max_chars,
@@ -91,7 +112,5 @@ def as_initial_prompt(terms: list[str], max_chars: int = 220) -> str:
                 len(terms),
                 ", ".join(dropped),
             )
-            break
-        kept.append(term)
-        total += added
+
     return ", ".join(kept)
