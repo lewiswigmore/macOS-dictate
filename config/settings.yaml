@@ -67,8 +67,10 @@ hotkey:
   swallow_combo: true               # true = dictate consumes the combo, so the
                                     # system/app binding never sees it. This is
                                     # what lets cmd+h override "Hide Window".
-                                    # false = the combo passes through and BOTH
-                                    # dictate and the app act on it.
+                                    # false = the combo passes through, and the
+                                    # app may also act on it — dictate may not
+                                    # trigger every time (e.g. a short press in
+                                    # hold mode below hold_threshold_ms).
                                     # Modifier match is exact: cmd+h will not
                                     # fire on cmd+shift+h.
   pause_override_default: false
