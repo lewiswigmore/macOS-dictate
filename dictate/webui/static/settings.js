@@ -60,9 +60,15 @@
     var banner = document.querySelector('[data-perm-banner]');
     if (!list || !data || !data.permissions) return;
 
+    var rows = list.querySelectorAll('[data-perm-key]');
+
     data.permissions.forEach(function (perm) {
-      var row = list.querySelector('[data-perm-key="' + perm.key + '"]');
+      var row = null;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].dataset.permKey === perm.key) { row = rows[i]; break; }
+      }
       if (!row) return;
+
       var pill = row.querySelector('[data-perm-pill]');
       if (pill) {
         pill.textContent = perm.granted ? 'Granted' : 'Not granted';
@@ -70,10 +76,32 @@
         pill.classList.toggle('is-denied', !perm.granted);
         pill.setAttribute('aria-label', perm.label + (perm.granted ? ' granted' : ' not granted'));
       }
+
+      var textEl = row.querySelector('.perm-text');
       var impact = row.querySelector('.perm-impact');
-      if (perm.granted && impact) impact.remove();
+      if (perm.granted) {
+        if (impact) impact.remove();
+      } else if (!impact && textEl) {
+        impact = document.createElement('span');
+        impact.className = 'perm-impact';
+        impact.textContent = perm.impact || '';
+        textEl.appendChild(impact);
+      } else if (impact) {
+        impact.textContent = perm.impact || '';
+      }
+
+      var actions = row.querySelector('.perm-actions');
       var btn = row.querySelector('[data-perm-open]');
-      if (perm.granted && btn) btn.remove();
+      if (perm.granted) {
+        if (btn) btn.remove();
+      } else if (!btn && actions) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'perm-open';
+        btn.dataset.permOpen = perm.key;
+        btn.textContent = 'Open Settings';
+        actions.insertBefore(btn, actions.firstChild);
+      }
     });
 
     if (banner) {
