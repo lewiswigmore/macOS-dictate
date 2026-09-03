@@ -9,6 +9,17 @@ from dictate.config import Config
 from dictate.vocab import as_initial_prompt, load_vocab
 
 
+@pytest.fixture(autouse=True)
+def _reset_truncation_warned_cache():
+    """as_initial_prompt dedupes warnings in a module-level set; tests using
+    identical terms must not see stale state from a previous test."""
+    from dictate import vocab as vocab_module
+
+    vocab_module._TRUNCATION_WARNED.clear()
+    yield
+    vocab_module._TRUNCATION_WARNED.clear()
+
+
 def _make_config(root: Path) -> Config:
     (root / "config" / "vocab" / "projects").mkdir(parents=True)
     return Config(root=root)
@@ -115,7 +126,21 @@ def test_as_initial_prompt_warns_on_drop(caplog: pytest.LogCaptureFixture) -> No
     with caplog.at_level(logging.WARNING, logger="dictate.vocab"):
         result = as_initial_prompt(terms, max_chars=10)
     assert result == "alpha"
-    assert any("truncated" in r.message and "beta, gamma" in r.message for r in caplog.records)
+    assert any(
+        "truncated" in r.getMessage() and "beta, gamma" in r.getMessage() for r in caplog.records
+    )
+
+
+def test_as_initial_prompt_warns_only_once_per_truncation(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Runs once per dictation — must not spam the log on every call."""
+    terms = ["alpha", "beta", "gamma"]
+    with caplog.at_level(logging.WARNING, logger="dictate.vocab"):
+        as_initial_prompt(terms, max_chars=10)
+        as_initial_prompt(terms, max_chars=10)
+        as_initial_prompt(terms, max_chars=10)
+    assert len(caplog.records) == 1
 
 
 def test_as_initial_prompt_no_warning_when_everything_fits(
