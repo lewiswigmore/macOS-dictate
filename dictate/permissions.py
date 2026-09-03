@@ -42,8 +42,15 @@ class Permissions:
 
     # ── microphone ────────────────────────────────────────────────────────────
 
-    def check_microphone(self) -> bool:
-        """Return True only if mic access is already Authorized."""
+    def check_microphone(self, *, prompt: bool = True) -> bool:
+        """Return True only if mic access is already Authorized.
+
+        ``prompt=False`` performs a silent check and never triggers the
+        system permission dialog — required for polled status readouts,
+        since requesting access on every poll would prompt the user
+        repeatedly for a permission that is merely being displayed, not
+        actually needed yet.
+        """
         try:
             from AVFoundation import (
                 AVAuthorizationStatusAuthorized,
@@ -55,7 +62,7 @@ class Permissions:
             status = AVCaptureDevice.authorizationStatusForMediaType_(AVMediaTypeAudio)
             if status == AVAuthorizationStatusAuthorized:
                 return True
-            if status == AVAuthorizationStatusNotDetermined:
+            if prompt and status == AVAuthorizationStatusNotDetermined:
                 # Triggers the system prompt; result comes asynchronously.
                 AVCaptureDevice.requestAccessForMediaType_completionHandler_(
                     AVMediaTypeAudio, lambda _granted: None
@@ -152,12 +159,13 @@ def check_all(*, prompt: bool = False) -> dict[str, bool]:
     """Silent permission snapshot, keyed by permission name.
 
     Safe to poll: defaults to ``prompt=False`` so no System Settings dialog
-    is raised. Used by the WebUI status panel.
+    and no microphone permission prompt is raised. Used by the WebUI status
+    panel.
     """
     perms = Permissions()
     return {
         "accessibility": perms.check_accessibility(prompt=prompt),
-        "microphone": perms.check_microphone(),
+        "microphone": perms.check_microphone(prompt=prompt),
         "input_monitoring": perms.check_input_monitoring(),
     }
 
