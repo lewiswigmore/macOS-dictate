@@ -4,6 +4,8 @@ import enum
 import threading
 import time
 from collections.abc import Callable
+from functools import reduce
+from operator import or_
 
 from .logging_setup import get_logger
 
@@ -75,9 +77,10 @@ MOD_MASKS: dict[str, int] = {
 
 _ESC_KEYCODE: int = 53
 
-# Every modifier bit we bind against. Used to require an EXACT modifier match
-# so a Cmd+H binding does not also swallow Cmd+Shift+H.
-_ALL_MOD_MASK: int = 0x100000 | 0x20000 | 0x80000 | 0x40000
+# Every modifier bit we bind against. Derived from MOD_MASKS so it can never
+# drift out of sync with the supported modifier set. Used to require an EXACT
+# modifier match so a Cmd+H binding does not also swallow Cmd+Shift+H.
+_ALL_MOD_MASK: int = reduce(or_, MOD_MASKS.values(), 0)
 
 # CGEventType values used for tap-disabled sentinels
 _TAP_DISABLED_TIMEOUT: int = 0xFFFFFFFE
