@@ -11,7 +11,7 @@ pytest
 ruff check .
 ```
 
-Use `AGENTS.md` as the source of truth for architecture, module boundaries, code style, and testing conventions.
+Use the README and tests as the source of truth for setup and behavior.
 
 ## Pull request process
 

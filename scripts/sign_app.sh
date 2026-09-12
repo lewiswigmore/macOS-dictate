@@ -27,7 +27,7 @@ fi
 
 ENTITLEMENTS="entitlements.plist"
 if [[ ! -f "$ENTITLEMENTS" ]]; then
-  echo "$ENTITLEMENTS not found. See docs/build-app.md for the template." >&2
+  echo "$ENTITLEMENTS not found." >&2
   exit 1
 fi
 

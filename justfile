@@ -27,6 +27,6 @@ clean:
     find . -type d -name __pycache__ -exec rm -rf {} +
 
 package:
-    @echo "Packaging .app bundle (not implemented yet — see ROADMAP.md v0.4)"
+    @echo "Build an app bundle with ./scripts/build_app.sh"
 
 ci: lint format-check test

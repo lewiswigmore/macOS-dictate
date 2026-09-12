@@ -21,3 +21,4 @@ bench/results/*.json
 .dictate.env
 user_prefs.yaml
 site/
+AGENTS.md
