@@ -51,30 +51,7 @@ sed_in_place() {
 
 sed_in_place "s/^version = \"[^\"]+\"/version = \"${VERSION}\"/" pyproject.toml
 
-python3 - "$VERSION" "$RELEASE_DATE" <<'PY'
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-version = sys.argv[1]
-release_date = sys.argv[2]
-path = Path("CHANGELOG.md")
-text = path.read_text()
-release_heading = f"## [{version}] - {release_date}"
-
-if release_heading in text:
-    raise SystemExit(f"CHANGELOG.md already contains {release_heading}")
-
-marker = "## [Unreleased]"
-if marker not in text:
-    raise SystemExit("CHANGELOG.md is missing an Unreleased section")
-
-text = text.replace(marker, f"{marker}\n\n{release_heading}", 1)
-path.write_text(text)
-PY
-
-git add pyproject.toml CHANGELOG.md
+git add pyproject.toml
 git commit -m "Release ${TAG}" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 git tag -a "$TAG" -m "Release ${TAG}"
 

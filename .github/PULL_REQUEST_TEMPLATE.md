@@ -37,6 +37,4 @@ dictate is a privacy-first project. Please confirm:
 
 - [ ] `ruff check .` passes
 - [ ] `pytest` passes
-- [ ] Docs updated (README / docs / FAQ), if user-visible
-- [ ] `AGENTS.md` updated, if conventions changed
-- [ ] `CHANGELOG.md` entry added under `Unreleased`
+- [ ] Docs updated, if user-visible
