@@ -71,6 +71,9 @@ hotkey:
                                     # hold   = walkie-talkie; release always stops
                                     # toggle = every press toggles, no hold-to-talk
 
+audio:
+  input_device_id: null             # null uses the current macOS default microphone
+
 hud:
   enabled: true
   streaming: true                   # show live partial transcript
