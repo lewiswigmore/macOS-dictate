@@ -41,6 +41,8 @@ jobs:
               - 'pyproject.toml'
               - 'requirements-*.txt'
               - 'requirements-*.in'
+              - 'docs/**'
+              - 'mkdocs.yml'
               - '.github/workflows/**'
               - 'install.sh'
 
