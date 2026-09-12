@@ -16,6 +16,7 @@ from dictate.history import last as history_last
 from dictate.hotkey_config import format_combo_glyph
 from dictate.icons import apply_to_app, apply_to_menu_item, write_brand_template_png
 from dictate.logging_setup import get_logger
+from dictate.recorder import InputDevice
 
 log = get_logger(__name__)
 
@@ -131,7 +132,11 @@ class MenuBar:
             [self._set_hotkey_item, self._mode_menu, None, self._override_item]
         )
 
-        # ── Feedback submenu ────────────────────────────────────────────────
+        self._input_device_menu = rumps.MenuItem("Input Microphone")
+        self._input_device_items: dict[int, Any] = {}
+        self.refresh_input_devices()
+
+        # ── Feedback submenu ──────────────────────────────────────────────────
         self._cues_item = rumps.MenuItem("Audio Cues", callback=self._on_cues_toggle)
         self._cues_item.state = int(bool(config.get("ui.audio_cues", True)))
         self._indicator_item = rumps.MenuItem(
@@ -217,6 +222,7 @@ class MenuBar:
                 self._privacy_item,
                 None,
                 self._hotkey_menu,
+                self._input_device_menu,
                 self._feedback_menu,
                 self._model_menu,
                 self._engine_menu,
@@ -230,6 +236,7 @@ class MenuBar:
                 rumps.MenuItem("Export Diagnostics…", callback=self._on_export),
                 rumps.MenuItem("About dictate…", callback=self._on_about),
                 None,
+                rumps.MenuItem("Restart dictate", callback=self._on_restart),
                 rumps.MenuItem("Quit dictate", callback=self._on_quit, key="q"),
             ],
             quit_button=None,
@@ -304,6 +311,30 @@ class MenuBar:
     def refresh_hotkey_label(self) -> None:
         """Re-read the hotkey from config and update the submenu title."""
         self._hotkey_menu.title = self._hotkey_menu_title()
+
+    def refresh_input_devices(self) -> None:
+        for key in list(self._input_device_menu.keys()):
+            del self._input_device_menu[key]
+        self._input_device_items.clear()
+        cb = self._callbacks.get("on_list_input_devices")
+        if not cb:
+            return
+        try:
+            devices: list[InputDevice] = cb()
+        except Exception:
+            log.exception("could not refresh microphone menu")
+            return
+        if not devices:
+            self._input_device_menu["empty"] = rumps.MenuItem("No microphones available")
+            return
+        for device in devices:
+            item = rumps.MenuItem(
+                device.name,
+                callback=lambda _sender, device_id=device.id: self._on_input_device_select(device_id),
+            )
+            item.state = int(device.is_default)
+            self._input_device_items[device.id] = item
+            self._input_device_menu[str(device.id)] = item
 
     def set_launch_at_login(self, on: bool) -> None:
         self._launch_item.state = int(on)
@@ -413,6 +444,11 @@ class MenuBar:
         if cb:
             cb(engine_id)
 
+    def _on_input_device_select(self, device_id: int) -> None:
+        cb = self._callbacks.get("on_input_device_select")
+        if cb:
+            cb(device_id)
+
     def _on_recent_click(self, idx: int) -> None:
         if idx < 0 or idx >= len(self._recent_entries):
             return
@@ -503,6 +539,11 @@ class MenuBar:
             _reveal_in_finder(path)
         except Exception as exc:
             log.exception("diagnostics export failed: %s", exc)
+
+    def _on_restart(self, sender: Any) -> None:
+        cb = self._callbacks.get("on_restart")
+        if cb:
+            cb()
 
     def _on_quit(self, sender: Any) -> None:
         cb = self._callbacks.get("on_quit")

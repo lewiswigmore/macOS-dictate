@@ -53,6 +53,7 @@ def _minimal_defaults(root: Path) -> dict[str, Any]:
             "logging": {"level": "INFO", "json": True, "file": str(root / "logs/dictate.log")},
             "asr": {"backend": "faster-whisper", "model": "distil-medium.en"},
             "vad": {"enabled": True},
+            "audio": {"input_device_id": None},
             "hotkey": {"mods": ["cmd"], "key": "h", "mode": "auto"},
         },
         "backends_raw": {

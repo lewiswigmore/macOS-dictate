@@ -22,6 +22,7 @@ dependencies = [
     "pyobjc-framework-Cocoa>=12.2.1",
     "pyobjc-framework-Quartz>=12.2.1",
     "pyobjc-framework-AVFoundation>=12.2.1",
+    "pyobjc-framework-CoreAudio>=12.2.1",
     "pyobjc-framework-ApplicationServices>=12.2.1",
     "pyobjc-framework-Speech>=12.2.1",
     "rumps>=0.4.0",
