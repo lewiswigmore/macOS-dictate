@@ -434,24 +434,39 @@ class App:
         if not select_input_device(device_id):
             log.error("could not select microphone id=%s", device_id)
             return False
-        self.config.persist_pref("audio.input_device_id", device_id)
+        try:
+            self.config.persist_pref("audio.input_device_id", device_id)
+        except Exception:
+            log.exception("could not save microphone preference")
+            try:
+                self.menubar.set_warning("Microphone preference was not saved")
+            except Exception:
+                log.debug("could not show microphone preference warning", exc_info=True)
         self.menubar.refresh_input_devices()
         log.info("selected microphone id=%s", device_id)
         return True
 
     def _on_restart(self) -> None:
         target = f"gui/{os.getuid()}/{LABEL}"
+        if launch_agent_installed():
+            try:
+                result = subprocess.run(
+                    ["launchctl", "kickstart", "-k", target],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    log.info("Restart requested via launchctl for %s", target)
+                    return
+                log.warning("launchctl restart failed with status %s", result.returncode)
+            except OSError:
+                log.exception("could not restart dictate via launchctl")
         try:
-            subprocess.Popen(
-                ["launchctl", "kickstart", "-k", target],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            log.info("Restart requested via launchctl for %s", target)
+            os.execv(sys.executable, [sys.executable, *sys.argv])
         except OSError:
-            log.exception("could not restart dictate via launchctl")
+            log.exception("could not restart dictate directly")
 
     def _on_show_last_transcript(self) -> None:
         reveal_last_in_finder(self.config)

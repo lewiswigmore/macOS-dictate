@@ -56,6 +56,19 @@ def test_select_input_device_sets_system_default(monkeypatch):
     assert struct.unpack("I", calls[0][5])[0] == 90
 
 
+def test_select_input_device_returns_false_without_audio_framework(monkeypatch):
+    from unittest.mock import Mock
+
+    import dictate.recorder as recorder
+
+    set_property = Mock()
+    monkeypatch.setattr(recorder, "_AVFOUNDATION_AVAILABLE", False)
+    monkeypatch.setattr(recorder, "AudioObjectSetPropertyData", set_property, raising=False)
+
+    assert recorder.select_input_device(90) is False
+    set_property.assert_not_called()
+
+
 def test_resample_passthrough_when_rates_equal():
     data = np.array([0.1, 0.2, 0.3], dtype=np.float32)
     out = _resample(data, 16000.0, 16000.0)

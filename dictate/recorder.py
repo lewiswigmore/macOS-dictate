@@ -85,12 +85,14 @@ def list_input_devices() -> list[InputDevice]:
 
 
 def select_input_device(device_id: int) -> bool:
-    address = AudioObjectPropertyAddress(
-        kAudioHardwarePropertyDefaultInputDevice,
-        kAudioObjectPropertyScopeGlobal,
-        kAudioObjectPropertyElementMain,
-    )
+    if not _AVFOUNDATION_AVAILABLE:
+        return False
     try:
+        address = AudioObjectPropertyAddress(
+            kAudioHardwarePropertyDefaultInputDevice,
+            kAudioObjectPropertyScopeGlobal,
+            kAudioObjectPropertyElementMain,
+        )
         status = AudioObjectSetPropertyData(
             kAudioObjectSystemObject, address, 0, [], 4, struct.pack("I", device_id)
         )
