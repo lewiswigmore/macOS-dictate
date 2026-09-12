@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import queue
+import struct
 import threading
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -12,7 +14,16 @@ log = get_logger(__name__)
 
 try:
     from AppKit import NSWorkspace, NSWorkspaceDidWakeNotification
-    from AVFoundation import AVAudioEngine
+    from AVFoundation import AVAudioEngine, AVCaptureDevice, AVMediaTypeAudio
+    from CoreAudio import (
+        AudioObjectGetPropertyData,
+        AudioObjectPropertyAddress,
+        AudioObjectSetPropertyData,
+        kAudioHardwarePropertyDefaultInputDevice,
+        kAudioObjectPropertyElementMain,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectSystemObject,
+    )
     from Foundation import NSNotificationCenter
 
     _AVFOUNDATION_AVAILABLE = True
@@ -26,6 +37,67 @@ except ImportError:
 _TARGET_SAMPLE_RATE: int = 16000
 _BUFFER_FRAMES: int = 2048  # 128ms @ 16kHz — fewer wake-ups than 1024 with no UX impact
 _CONFIG_CHANGE_NOTIFICATION = "AVAudioEngineConfigurationChangeNotification"
+
+
+@dataclass(frozen=True)
+class InputDevice:
+    id: int
+    name: str
+    is_default: bool
+
+
+def _default_input_device_id() -> int | None:
+    address = AudioObjectPropertyAddress(
+        kAudioHardwarePropertyDefaultInputDevice,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain,
+    )
+    try:
+        status, size, data = AudioObjectGetPropertyData(
+            kAudioObjectSystemObject, address, 0, [], 4, None
+        )
+    except Exception:
+        log.debug("could not read default input device", exc_info=True)
+        return None
+    if status != 0 or size != 4:
+        return None
+    return struct.unpack("I", data)[0]
+
+
+def list_input_devices() -> list[InputDevice]:
+    if not _AVFOUNDATION_AVAILABLE:
+        return []
+    default_id = _default_input_device_id()
+    try:
+        devices = AVCaptureDevice.devicesWithMediaType_(AVMediaTypeAudio)
+        microphones = [
+            InputDevice(
+                id=int(device.connectionID()),
+                name=str(device.localizedName()),
+                is_default=int(device.connectionID()) == default_id,
+            )
+            for device in devices
+        ]
+    except Exception:
+        log.exception("could not list input devices")
+        return []
+    return sorted(microphones, key=lambda device: device.name.casefold())
+
+
+def select_input_device(device_id: int) -> bool:
+    address = AudioObjectPropertyAddress(
+        kAudioHardwarePropertyDefaultInputDevice,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain,
+    )
+    try:
+        status = AudioObjectSetPropertyData(
+            kAudioObjectSystemObject, address, 0, [], 4, struct.pack("I", device_id)
+        )
+    except Exception:
+        log.exception("could not set input device")
+        return False
+    return status == 0
 
 
 def _resample(data: np.ndarray, from_rate: float, to_rate: float) -> np.ndarray:

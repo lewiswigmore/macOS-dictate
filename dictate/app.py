@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import sys
@@ -29,6 +30,7 @@ from dictate.hotkey import HotkeyTap
 from dictate.hotkey_config import ComboParseError, format_combo, parse_combo, write_hotkey
 from dictate.hud import HUD
 from dictate.indicator import Indicator
+from dictate.launch_agent import LABEL
 from dictate.launch_agent import (
     install as install_launch_agent,
 )
@@ -45,7 +47,7 @@ from dictate.menubar import MenuBar
 from dictate.onboarding import OnboardingWizard
 from dictate.permissions import Permissions
 from dictate.punctuate import smart_punctuate
-from dictate.recorder import MicRecorder
+from dictate.recorder import MicRecorder, list_input_devices, select_input_device
 from dictate.redact import Redactor
 from dictate.typer import Typer
 from dictate.vad import VAD
@@ -129,6 +131,7 @@ class App:
         self.commands = CommandParser(self.config.commands)
         self.context = ContextProbe(self.config)
         self.recorder = MicRecorder()
+        self._apply_configured_input_device()
         self.vad = VAD(self.config)
         # Auto-endpoint uses an isolated VAD instance so its state machine
         # doesn't interfere with the post-stop trim_silence pass. It also
@@ -170,8 +173,11 @@ class App:
                 "on_hotkey_mode_change": self._on_hotkey_mode_change,
                 "on_asr_model_change": self._on_asr_model_change,
                 "on_asr_engine_change": self._on_asr_engine_change,
+                "on_list_input_devices": list_input_devices,
+                "on_input_device_select": self._on_input_device_select,
                 "on_paste_text": self._on_paste_text,
                 "on_request_current_preset": self._current_preset,
+                "on_restart": self._on_restart,
                 "on_quit": self.shutdown,
             },
         )
@@ -354,6 +360,13 @@ class App:
         self._shutdown_webui()
         sys.exit(0)
 
+    def _apply_configured_input_device(self) -> None:
+        device_id = self.config.get("audio.input_device_id")
+        if not isinstance(device_id, int):
+            return
+        if not select_input_device(device_id):
+            log.warning("configured microphone id=%s is unavailable", device_id)
+
     # ------------------------------------------------------------ automation hooks
 
     def start_recording(self) -> None:
@@ -413,6 +426,32 @@ class App:
     def _on_pause_override_toggle(self, paused: bool) -> None:
         self.hotkey.set_pause_override(paused)
         log.info("Cmd+H override paused=%s", paused)
+
+    def _on_input_device_select(self, device_id: int) -> bool:
+        if self.recorder.is_running:
+            log.warning("cannot change microphone while recording")
+            return False
+        if not select_input_device(device_id):
+            log.error("could not select microphone id=%s", device_id)
+            return False
+        self.config.persist_pref("audio.input_device_id", device_id)
+        self.menubar.refresh_input_devices()
+        log.info("selected microphone id=%s", device_id)
+        return True
+
+    def _on_restart(self) -> None:
+        target = f"gui/{os.getuid()}/{LABEL}"
+        try:
+            subprocess.Popen(
+                ["launchctl", "kickstart", "-k", target],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            log.info("Restart requested via launchctl for %s", target)
+        except OSError:
+            log.exception("could not restart dictate via launchctl")
 
     def _on_show_last_transcript(self) -> None:
         reveal_last_in_finder(self.config)

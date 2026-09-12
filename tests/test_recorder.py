@@ -5,6 +5,57 @@ import numpy as np
 from dictate.recorder import _resample
 
 
+def test_lists_available_microphones_with_default_marker(monkeypatch):
+    import dictate.recorder as recorder
+
+    class Device:
+        def __init__(self, device_id: int, name: str) -> None:
+            self._device_id = device_id
+            self._name = name
+
+        def connectionID(self) -> int:
+            return self._device_id
+
+        def localizedName(self) -> str:
+            return self._name
+
+    devices = [Device(90, "Brio 500"), Device(94, "SteelSeries Arctis 1 Wireless")]
+    monkeypatch.setattr(recorder, "_AVFOUNDATION_AVAILABLE", True)
+    monkeypatch.setattr(
+        recorder,
+        "AVCaptureDevice",
+        type("CaptureDevices", (), {"devicesWithMediaType_": staticmethod(lambda _media: devices)}),
+        raising=False,
+    )
+    monkeypatch.setattr(recorder, "AVMediaTypeAudio", "audio", raising=False)
+    monkeypatch.setattr(recorder, "_default_input_device_id", lambda: 94, raising=False)
+
+    microphones = recorder.list_input_devices()
+
+    assert [(mic.id, mic.name, mic.is_default) for mic in microphones] == [
+        (90, "Brio 500", False),
+        (94, "SteelSeries Arctis 1 Wireless", True),
+    ]
+
+
+def test_select_input_device_sets_system_default(monkeypatch):
+    import struct
+
+    import dictate.recorder as recorder
+
+    calls = []
+
+    def set_property(object_id, address, qualifier_size, qualifier_data, data_size, data):
+        calls.append((object_id, address, qualifier_size, qualifier_data, data_size, data))
+        return 0
+
+    monkeypatch.setattr(recorder, "AudioObjectSetPropertyData", set_property, raising=False)
+
+    assert recorder.select_input_device(90) is True
+    assert calls[0][4] == 4
+    assert struct.unpack("I", calls[0][5])[0] == 90
+
+
 def test_resample_passthrough_when_rates_equal():
     data = np.array([0.1, 0.2, 0.3], dtype=np.float32)
     out = _resample(data, 16000.0, 16000.0)
